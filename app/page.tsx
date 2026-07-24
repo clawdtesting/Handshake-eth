@@ -446,7 +446,7 @@ function WantedOfferSlide() {
               <SafeCollectionImage
                 collectionAddress="0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9"
                 alt="T00ns logo"
-                className="h-12 w-12 rounded-full"
+                className="h-16 w-16 rounded-full"
               />
               <span className="mt-2 text-xs font-semibold text-foreground">
                 2x
@@ -579,7 +579,7 @@ function CustomTradeVisual() {
             <SafeCollectionImage
               collectionAddress="0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9"
               alt="T00ns x1"
-              className="mx-auto h-[54px] w-[78px] rounded-xl border border-ethereum-purple/30"
+              className="mx-auto h-[54px] w-[54px] rounded-xl border border-ethereum-purple/30"
             />
             <p className="mt-1 text-sm font-bold text-foreground">1x</p>
           </div>
