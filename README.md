@@ -139,6 +139,30 @@ After deployment, publish and verify the Solidity `0.8.28` / optimizer 1000 / EV
 build with order-bound fees, the flat-fee cap, pull-payment fees, and the
 `Pausable` emergency stop.
 
+## Vercel deployment
+
+Before promoting a Vercel deployment to production:
+
+1. Apply every migration in `supabase/migrations/` to production Supabase and
+   configure its allowed site and redirect URLs for the production domain.
+2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`,
+   `NEXT_PUBLIC_ETH_MAINNET_RPC_URL`, `ETH_MAINNET_RPC_URL`, and `CRON_SECRET`
+   in Vercel. Public variables are embedded in browser bundles; use a
+   domain-restricted public RPC key that does not share server credentials.
+3. Set `NEXT_PUBLIC_SETTLEMENT_CONTRACT_ADDRESS` and `HANDSHAKE_ADDRESS` only
+   after the audited Ethereum deployment exists. Until then, treat the site as
+   a preview and do not present settlement as live.
+4. Do **not** add `PRIVATE_KEY_DEPLOYER` to Vercel. Deployment keys belong in a
+   dedicated deployment environment, not the web application runtime.
+5. Allow the production domain and intentional preview domains in WalletConnect
+   and NFT-provider dashboards. Avoid wildcard preview origins for production
+   API credentials wherever the provider supports an origin allowlist.
+
+`vercel.json` schedules protected deal-room reconciliation daily as a baseline
+for low-frequency hosting plans. Prompt expiry reconciliation needs a plan that
+supports an hourly schedule; change the cron only after confirming plan limits.
+
 ## Testing
 
 Contracts run on Foundry (compiled with the exact deployed toolchain, solc
