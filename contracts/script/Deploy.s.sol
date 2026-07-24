@@ -11,19 +11,24 @@ import {Handshake} from "../src/Handshake.sol";
 ///   export INITIAL_COLLECTIONS=0xAbc...,0xDef...
 ///   npm run contracts:deploy
 contract Deploy is Script {
+    /// T00ns — the sole launch collection on Ethereum mainnet. All Monad-era
+    /// collections were removed post-migration.
+    address internal constant T00NS_COLLECTION = 0x902D94Ba5bFc0cb408D1A6Ca4B8F255d845E50e9;
+
     function run() external {
         uint256 deployerKey = _deployerKey();
         address feeRecipient = vm.envAddress("FEE_RECIPIENT_ADDRESS");
         address contractOwner = vm.envOr("CONTRACT_OWNER", vm.addr(deployerKey));
 
         // Launch allowlist. Read from INITIAL_COLLECTIONS as a comma-separated
-        // address list; default to empty so a deploy without the var seeds no
-        // collections (every collection must then go through the ADD_DELAY
-        // timelock via proposeCollection). Seeded entries are tradable in the
-        // deployment block.
-        address[] memory noSeed;
+        // address list; default to exactly T00ns so a deploy without the var
+        // seeds the single launch collection. Seeded entries are tradable in the
+        // deployment block; any later collection must go through the ADD_DELAY
+        // timelock via proposeCollection.
+        address[] memory defaultSeed = new address[](1);
+        defaultSeed[0] = T00NS_COLLECTION;
         address[] memory initialCollections =
-            vm.envOr("INITIAL_COLLECTIONS", ",", noSeed);
+            vm.envOr("INITIAL_COLLECTIONS", ",", defaultSeed);
 
         vm.startBroadcast(deployerKey);
         Handshake settlement =
