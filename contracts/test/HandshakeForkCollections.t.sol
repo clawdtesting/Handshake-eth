@@ -45,28 +45,18 @@ contract HandshakeForkCollections is Test {
     string[] internal names;
 
     function setUp() public {
-        // The seven collections seeded onto the deployed Handshake allowlist
-        // (mirrors lib/featured-collections.ts). Override with SEEDED_COLLECTIONS
-        // (comma-separated) if the deployed set changes.
-        address[] memory fallbackList = new address[](7);
-        fallbackList[0] = 0x818030837E8350ba63E64d7dC01A547fA73c8279; // 10kSquad
-        fallbackList[1] = 0x2a0001f3D4c98881376F8d36B3C61f163d84a095; // Erebus
-        fallbackList[2] = 0x200723A706de0013316E5cd8EBa2b3f53DD90c29; // r3tards
-        fallbackList[3] = 0x36982448e77658b8F58F4665696e3173D1e696C2; // Molandaks
-        fallbackList[4] = 0xcbdFaD1bfb6A4414DD4D84B7A6420dc43683deB0; // Roarrr
-        fallbackList[5] = 0xaEAA920165fD7ce58a0E0772Ffc97F06626572cD; // Sealuminati
-        fallbackList[6] = 0x9F8514cEBee138b61806d4651f51d26C8098b463; // The Daks
+        // The single collection seeded onto the deployed Handshake allowlist
+        // (mirrors lib/featured-collections.ts). T00ns is the sole launch
+        // collection on Ethereum mainnet; all Monad-era collections were removed
+        // post-migration. Override with SEEDED_COLLECTIONS (comma-separated) if
+        // the deployed set changes.
+        address[] memory fallbackList = new address[](1);
+        fallbackList[0] = 0x902D94Ba5bFc0cb408D1A6Ca4B8F255d845E50e9; // T00ns
 
         collections = vm.envOr("SEEDED_COLLECTIONS", ",", fallbackList);
 
-        names = new string[](7);
-        names[0] = "10kSquad";
-        names[1] = "Erebus";
-        names[2] = "r3tards";
-        names[3] = "Molandaks";
-        names[4] = "Roarrr";
-        names[5] = "Sealuminati";
-        names[6] = "The Daks";
+        names = new string[](1);
+        names[0] = "T00ns";
     }
 
     function test_SeededCollections_AreNonUpgradeable_And_Transferable() public {

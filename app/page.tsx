@@ -406,7 +406,7 @@ function WantedOfferSlide() {
               Wanted offer
             </p>
             <h4 className="mt-1 text-lg font-semibold">
-              Looking for 2x 10KSquad NFT
+              Looking for 2x T00ns NFT
             </h4>
           </div>
           <span className="rounded-full border border-fuchsia-300/30 bg-fuchsia-300/10 px-3 py-1 text-xs text-fuchsia-200">
@@ -444,8 +444,8 @@ function WantedOfferSlide() {
             </p>
             <div className="flex aspect-square flex-col items-center justify-center rounded-lg border border-ethereum-purple/30 bg-gradient-to-br from-fuchsia-400/30 to-cyan-300/20 text-ethereum-purple">
               <SafeCollectionImage
-                collectionAddress="0x818030837e8350ba63e64d7dc01a547fa73c8279"
-                alt="10KSquad logo"
+                collectionAddress="0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9"
+                alt="T00ns logo"
                 className="h-12 w-12 rounded-full"
               />
               <span className="mt-2 text-xs font-semibold text-foreground">
@@ -475,13 +475,13 @@ function CustomDealSlide() {
     {
       number: "2",
       icon: <Plus className="h-4 w-4" />,
-      title: "Add your 10kSquad NFT and 10K ETH",
+      title: "Add your T00ns NFT and 10K ETH",
       body: "Add the assets you want to offer on your side.",
     },
     {
       number: "3",
       icon: <ImageIcon className="h-4 w-4" />,
-      title: "Request the r3tard NFT",
+      title: "Request another T00ns NFT",
       body: "Choose the NFT you want on the other side.",
     },
     {
@@ -545,8 +545,8 @@ function CustomTradeVisual() {
           <div className="flex items-center justify-center gap-3">
             <div className="text-center">
               <SafeCollectionImage
-                collectionAddress="0x818030837e8350ba63e64d7dc01a547fa73c8279"
-                alt="10kSquad x1"
+                collectionAddress="0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9"
+                alt="T00ns x1"
                 className="h-[54px] w-[54px] rounded-xl border border-ethereum-purple/30"
               />
               <p className="mt-1 text-sm font-bold text-foreground">1x</p>
@@ -577,8 +577,8 @@ function CustomTradeVisual() {
         <div className="rounded-xl border border-ethereum-purple/35 bg-secondary/60 p-2 shadow-lg shadow-ethereum-purple/10">
           <div className="text-center">
             <SafeCollectionImage
-              collectionAddress="0x200723a706de0013316e5cd8eba2b3f53dd90c29"
-              alt="r3tard x1"
+              collectionAddress="0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9"
+              alt="T00ns x1"
               className="mx-auto h-[54px] w-[78px] rounded-xl border border-ethereum-purple/30"
             />
             <p className="mt-1 text-sm font-bold text-foreground">1x</p>

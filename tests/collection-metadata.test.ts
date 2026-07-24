@@ -17,8 +17,10 @@ vi.mock("@/lib/nft/safe-fetch", () => ({
 import { getCollectionMetadata } from "@/lib/nft/collection-metadata";
 
 const CHAIN = 1;
-const TENK = "0x818030837e8350ba63e64d7dc01a547fa73c8279";
-const EREBUS = "0x2a0001f3d4c98881376f8d36b3c61f163d84a095";
+// T00ns is the sole curated launch collection on Ethereum mainnet. It pins no
+// local logo (image === the placeholder), so it deliberately resolves its real
+// artwork from on-chain/indexer metadata rather than an "official" override.
+const T00NS = "0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9";
 
 // Unique non-featured address per test → avoids the module-level cache.
 let counter = 0;
@@ -77,25 +79,15 @@ afterEach(() => {
 });
 
 describe("collection logo resolution", () => {
-  it("official override wins for a curated collection (10kSquad → local static)", async () => {
-    const meta = await getCollectionMetadata(TENK, CHAIN);
-    expect(meta.source).toBe("official");
-    expect(meta.image).toBe("/collections/10Ksquad.png");
-    // No network needed for an official override.
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it("matches the override case-insensitively (mixed-case address)", async () => {
-    const meta = await getCollectionMetadata(TENK.toUpperCase(), CHAIN);
-    expect(meta.source).toBe("official");
-    expect(meta.image).toBe("/collections/10Ksquad.png");
-  });
-
-  it("Erebus logo is a static image, never an .mp4", async () => {
-    const meta = await getCollectionMetadata(EREBUS, CHAIN);
-    expect(meta.image).toBe("/collections/Erebus.png");
-    expect(meta.image.endsWith(".mp4")).toBe(false);
-    expect(meta.source).toBe("official");
+  it("curated collection with no pinned logo skips the official override", async () => {
+    // T00ns is the sole curated collection and pins no local logo, so the
+    // official-override source yields the placeholder and is discarded; the
+    // collection's real artwork is resolved from on-chain/indexer metadata
+    // instead (here every on-chain read reverts, so it lands on the
+    // placeholder). This proves no Monad-era local logo override survives.
+    const meta = await getCollectionMetadata(T00NS, CHAIN);
+    expect(meta.source).not.toBe("official");
+    expect(meta.image).toBe("/Logomark.png");
   });
 
   it("rejects an mp4 contractURI image and falls through to opensea", async () => {

@@ -184,7 +184,7 @@ export default function WantedPage() {
               </select>
             </label>
             <Input
-              placeholder="Deal offer… (e.g. 25 ETH or 10kSquad #123)"
+              placeholder="Deal offer… (e.g. 25 ETH or T00ns #123)"
               value={offering}
               maxLength={280}
               onChange={(e) => setOffering(e.target.value)}
