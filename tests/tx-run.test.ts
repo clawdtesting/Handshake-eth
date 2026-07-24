@@ -19,8 +19,8 @@ function makeClient(overrides: Record<string, unknown> = {}): any {
 function baseParams(overrides: Record<string, unknown> = {}) {
   return {
     account: ACCOUNT,
-    walletChainId: 10143,
-    expectedChainId: 10143,
+    walletChainId: 1,
+    expectedChainId: 1,
     label: "Test write",
     address: CONTRACT,
     abi: [] as never,
@@ -62,7 +62,7 @@ describe("runWrite", () => {
       runWrite({
         publicClient,
         writeContractAsync,
-        ...baseParams({ walletChainId: 1 }),
+        ...baseParams({ walletChainId: 2 }),
       } as never),
     ).rejects.toMatchObject({ errorName: "WrongNetwork" });
 

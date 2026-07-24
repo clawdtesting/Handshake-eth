@@ -14,7 +14,7 @@ interface IERC721MetaLike {
 
 /// @notice Fork test that hardens the launch allowlist against the residual risk
 ///         HandshakeUpgradeableRisk.t.sol demonstrates in the abstract: it checks
-///         the REAL seeded Monad collections. For each one it verifies, against
+///         the REAL seeded Ethereum collections. For each one it verifies, against
 ///         live mainnet state, that the collection is:
 ///           - a deployed contract,
 ///           - NOT an upgradeable proxy (EIP-1967 / beacon slots empty) — a
@@ -26,9 +26,9 @@ interface IERC721MetaLike {
 ///             Handshake._transferNFTs revert (a per-collection DoS). This is
 ///             reported, not asserted, since it is a UX break, not a theft.
 ///
-///         The test SKIPS cleanly when MONAD_RPC_URL is unset, so it never
+///         The test SKIPS cleanly when ETH_MAINNET_RPC_URL is unset, so it never
 ///         breaks CI; run it locally/nightly with:
-///           MONAD_RPC_URL=https://rpc.monad.xyz forge test --match-contract \
+///           ETH_MAINNET_RPC_URL=https://rpc.ethereum.xyz forge test --match-contract \
 ///             HandshakeForkCollections -vvv
 contract HandshakeForkCollections is Test {
     // EIP-1967 implementation & beacon slots, and EIP-1822 (UUPS) proxiable slot.
@@ -70,9 +70,9 @@ contract HandshakeForkCollections is Test {
     }
 
     function test_SeededCollections_AreNonUpgradeable_And_Transferable() public {
-        string memory rpc = vm.envOr("MONAD_RPC_URL", string(""));
+        string memory rpc = vm.envOr("ETH_MAINNET_RPC_URL", string(""));
         if (bytes(rpc).length == 0) {
-            console.log("MONAD_RPC_URL unset - skipping fork checks.");
+            console.log("ETH_MAINNET_RPC_URL unset - skipping fork checks.");
             vm.skip(true);
             return;
         }
@@ -84,7 +84,7 @@ contract HandshakeForkCollections is Test {
             console.log("---", label, c);
 
             // 1. Must be a deployed contract (HARD).
-            assertGt(c.code.length, 0, "seeded collection has no code on Monad");
+            assertGt(c.code.length, 0, "seeded collection has no code on Ethereum");
 
             // 2. Must NOT be an upgradeable proxy (HARD): a mutable implementation
             //    can later lie in ownerOf and reopen the theft vector.

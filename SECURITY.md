@@ -1,8 +1,8 @@
 # Security Policy
 
-Handshake is a non-custodial, peer-to-peer NFT/MON settlement protocol on Monad.
+Handshake is a non-custodial, peer-to-peer NFT/ETH settlement protocol on Ethereum.
 Settlement is atomic and on-chain; the contract owner can never move user NFTs or
-escrowed MON.
+escrowed ETH.
 
 ## Reporting a vulnerability
 
@@ -28,7 +28,7 @@ reports promptly and will coordinate disclosure once a fix is deployed.
 ## What has been done
 
 - **Verified on-chain source** — `Handshake.sol` (Solidity `0.8.28`, optimizer
-  1000 runs, EVM `cancun`) is verified on MonadScan, so anyone can read and
+  1000 runs, EVM `cancun`) is verified on Etherscan, so anyone can read and
   reproduce the settlement logic.
 - **Adversarial test suite** — reentrancy at the mid-settlement NFT callback on
   both legs, the payout escrow-credit fallback under hostile recipients, fuzzed
@@ -50,3 +50,7 @@ upgradeable proxy could later swap in a malicious `ownerOf`. The
 
 > This project has not yet undergone an independent external smart-contract
 > audit. Treat it accordingly until one is completed.
+
+
+## Multi-standard settlement
+Allowlisted ERC-721-family and ERC-1155 collections are supported. ERC721-C operators must be creator-authorized. EIP-2981 royalties use pull payments; NFT-only swaps accrue none. NFTs transfer directly user-to-user; Handshake never implements token-receiver custody hooks.

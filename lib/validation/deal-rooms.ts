@@ -29,8 +29,8 @@ export const draftSchema = z
     takerAddress: addressSchema,
     makerNFTs: z.array(revisionNftSchema).max(20),
     takerNFTs: z.array(revisionNftSchema).max(20),
-    makerMonAmount: uint256Schema,
-    takerMonAmount: uint256Schema,
+    makerEthAmount: uint256Schema,
+    takerEthAmount: uint256Schema,
     feeBps: z.number().int().min(0).max(500),
     flatFee: uint256Schema,
     offerExpiry: z.number().int().positive(),
@@ -39,11 +39,11 @@ export const draftSchema = z
     message: "Maker and taker must differ",
   })
   .refine(
-    (d) => d.makerNFTs.length > 0 || safeBigInt(d.makerMonAmount) > 0n,
+    (d) => d.makerNFTs.length > 0 || safeBigInt(d.makerEthAmount) > 0n,
     "Maker side must offer something"
   )
   .refine(
-    (d) => d.takerNFTs.length > 0 || safeBigInt(d.takerMonAmount) > 0n,
+    (d) => d.takerNFTs.length > 0 || safeBigInt(d.takerEthAmount) > 0n,
     "Taker side must request something"
   )
   .refine((d) => d.offerExpiry > Math.floor(Date.now() / 1000), {
@@ -124,8 +124,8 @@ export const finalizeSchema = z.object({
         z.object({ contractAddress: addressSchema, tokenId: uint256Schema })
       )
       .max(20),
-    makerMonAmount: uint256Schema,
-    takerMonAmount: uint256Schema,
+    makerEthAmount: uint256Schema,
+    takerEthAmount: uint256Schema,
     feeBps: uint256Schema,
     flatFee: uint256Schema,
     nonce: uint256Schema,

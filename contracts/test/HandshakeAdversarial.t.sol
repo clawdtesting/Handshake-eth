@@ -16,7 +16,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///         1. Reentrancy at the mid-settlement ERC-721 receive hook. In
 ///            fulfillTrade the maker's NFTs are safeTransferFrom'd to the taker
 ///            AFTER nonceUsed / escrow effects are committed but BEFORE the
-///            second leg and the MON payouts. A contract taker's
+///            second leg and the ETH payouts. A contract taker's
 ///            onERC721Received fires exactly there; these tests prove the
 ///            ReentrancyGuard holds at that window, with a control case showing
 ///            it is the RE-ENTRY (not merely being a contract) that reverts.
@@ -28,7 +28,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///            falls back to a recoverable escrow credit, settlement never
 ///            reverts, and solvency holds.
 ///
-///         Plus exact dual-MON-leg fee accounting to the wei, with off-by-one
+///         Plus exact dual-ETH-leg fee accounting to the wei, with off-by-one
 ///         payments rejected.
 contract HandshakeAdversarial is Test {
     Handshake internal hs;
@@ -70,27 +70,27 @@ contract HandshakeAdversarial is Test {
     // Helpers
     // ---------------------------------------------------------------------
 
-    /// @dev A single colA(TOKEN_A) <-> colB(colBToken) order with optional MON
+    /// @dev A single colA(TOKEN_A) <-> colB(colBToken) order with optional ETH
     ///      legs on each side, feeBps = 1%, addressed to `takerAddr`.
     function _buildOrder(
         address takerAddr,
         uint256 colBToken,
-        uint256 makerMon,
-        uint256 takerMon,
+        uint256 makerEth,
+        uint256 takerEth,
         uint256 nonce
     ) internal view returns (Handshake.TradeOrder memory order) {
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](1);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(colA), tokenId: TOKEN_A});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colA), tokenId: TOKEN_A, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(colB), tokenId: colBToken});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colB), tokenId: colBToken, amount: 1});
 
         order = Handshake.TradeOrder({
             maker: maker,
             taker: takerAddr,
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: makerMon,
-            takerMonAmount: takerMon,
+            makerEthAmount: makerEth,
+            takerEthAmount: takerEth,
             feeBps: 100, // 1%
             flatFee: 0,
             nonce: nonce,
@@ -103,17 +103,17 @@ contract HandshakeAdversarial is Test {
         return abi.encodePacked(r, s, v);
     }
 
-    /// @dev Fund the maker's escrow with a maker MON leg + its 1% fee.
-    function _fundMaker(uint256 makerMon) internal {
-        if (makerMon == 0) return;
-        uint256 makerCost = makerMon + (makerMon * 100) / 10_000;
+    /// @dev Fund the maker's escrow with a maker ETH leg + its 1% fee.
+    function _fundMaker(uint256 makerEth) internal {
+        if (makerEth == 0) return;
+        uint256 makerCost = makerEth + (makerEth * 100) / 10_000;
         vm.deal(maker, makerCost);
         vm.prank(maker);
         hs.deposit{value: makerCost}();
     }
 
     /// @dev balance == Σescrow + ΣpendingFees across every account that can hold
-    ///      native MON in these scenarios.
+    ///      native ETH in these scenarios.
     function _assertSolvent(address other) internal view {
         uint256 tracked = hs.escrowBalance(maker) + hs.escrowBalance(feeRecipient)
             + hs.escrowBalance(other) + hs.pendingFees(feeRecipient);
@@ -245,16 +245,16 @@ contract HandshakeAdversarial is Test {
         colB.setApprovalForAll(address(hs), true);
 
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](1);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(colA), tokenId: makerTok});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colA), tokenId: makerTok, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(colB), tokenId: takerTok});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colB), tokenId: takerTok, amount: 1});
         order = Handshake.TradeOrder({
             maker: address(attackerMaker),
             taker: takerEOA,
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: 0,
-            takerMonAmount: 0,
+            makerEthAmount: 0,
+            takerEthAmount: 0,
             feeBps: 100,
             flatFee: 0,
             nonce: nonce,
@@ -272,29 +272,29 @@ contract HandshakeAdversarial is Test {
         colB.mint(address(taker), tokenB);
         taker.approveCollection(address(colB));
 
-        // Maker MON leg is auto-withdrawn to the taker; the taker's receive burns
+        // Maker ETH leg is auto-withdrawn to the taker; the taker's receive burns
         // more than the 30k stipend, so the direct send fails.
-        uint256 makerMon = 1 ether;
-        _fundMaker(makerMon);
+        uint256 makerEth = 1 ether;
+        _fundMaker(makerEth);
 
-        Handshake.TradeOrder memory order = _buildOrder(address(taker), tokenB, makerMon, 0, 4);
+        Handshake.TradeOrder memory order = _buildOrder(address(taker), tokenB, makerEth, 0, 4);
         bytes memory sig = _sign(order);
 
         vm.expectEmit(true, false, false, true, address(hs));
-        emit ProceedsCredited(address(taker), makerMon);
-        taker.fulfill(order, sig); // no taker MON leg -> 0 msg.value
+        emit ProceedsCredited(address(taker), makerEth);
+        taker.fulfill(order, sig); // no taker ETH leg -> 0 msg.value
 
         // Settlement completed despite the hostile recipient...
         assertEq(colA.ownerOf(TOKEN_A), address(taker), "NFT delivered");
         assertEq(colB.ownerOf(tokenB), maker, "NFT delivered");
         // ...the un-deliverable payout was credited to escrow, not reverted.
-        assertEq(hs.escrowBalance(address(taker)), makerMon, "payout credited to escrow");
-        assertEq(hs.pendingFees(feeRecipient), (makerMon * 100) / 10_000, "maker-leg fee accrued");
+        assertEq(hs.escrowBalance(address(taker)), makerEth, "payout credited to escrow");
+        assertEq(hs.pendingFees(feeRecipient), (makerEth * 100) / 10_000, "maker-leg fee accrued");
         _assertSolvent(address(taker));
 
         // Recoverable: withdraw() forwards full gas, so the griefer can pull it.
-        taker.pull(makerMon);
-        assertEq(address(taker).balance, makerMon, "griefer recovered credited MON");
+        taker.pull(makerEth);
+        assertEq(address(taker).balance, makerEth, "griefer recovered credited ETH");
         assertEq(hs.escrowBalance(address(taker)), 0, "escrow drained on recovery");
         _assertSolvent(address(taker));
     }
@@ -305,31 +305,31 @@ contract HandshakeAdversarial is Test {
         colB.mint(address(taker), tokenB);
         taker.approveCollection(address(colB));
 
-        uint256 makerMon = 1 ether;
-        _fundMaker(makerMon);
+        uint256 makerEth = 1 ether;
+        _fundMaker(makerEth);
 
-        Handshake.TradeOrder memory order = _buildOrder(address(taker), tokenB, makerMon, 0, 5);
+        Handshake.TradeOrder memory order = _buildOrder(address(taker), tokenB, makerEth, 0, 5);
         bytes memory sig = _sign(order);
 
         vm.expectEmit(true, false, false, true, address(hs));
-        emit ProceedsCredited(address(taker), makerMon);
+        emit ProceedsCredited(address(taker), makerEth);
         taker.fulfill(order, sig);
 
         // The return-bomb neither reverted settlement nor inflated the caller
         // (zero-length output buffer); it simply fell back to an escrow credit.
         assertEq(colA.ownerOf(TOKEN_A), address(taker), "NFT delivered");
         assertEq(colB.ownerOf(tokenB), maker, "NFT delivered");
-        assertEq(hs.escrowBalance(address(taker)), makerMon, "payout credited to escrow");
+        assertEq(hs.escrowBalance(address(taker)), makerEth, "payout credited to escrow");
         _assertSolvent(address(taker));
 
         // Recoverable via full-gas withdraw (blob discarded again).
-        taker.pull(makerMon);
-        assertEq(address(taker).balance, makerMon, "bomber recovered credited MON");
+        taker.pull(makerEth);
+        assertEq(address(taker).balance, makerEth, "bomber recovered credited ETH");
         _assertSolvent(address(taker));
     }
 
     // ---------------------------------------------------------------------
-    // 3. Dual-MON-leg fee exactness + off-by-one payment rejection
+    // 3. Dual-ETH-leg fee exactness + off-by-one payment rejection
     // ---------------------------------------------------------------------
 
     function test_DualMonLeg_FeesExactToTheWei() public {
@@ -339,30 +339,30 @@ contract HandshakeAdversarial is Test {
         vm.prank(takerEOA);
         colB.setApprovalForAll(address(hs), true);
 
-        uint256 makerMon = 3 ether;
-        uint256 takerMon = 1 ether;
-        uint256 makerLegFee = (makerMon * 100) / 10_000; // 0.03
-        uint256 takerLegFee = (takerMon * 100) / 10_000; // 0.01
+        uint256 makerEth = 3 ether;
+        uint256 takerEth = 1 ether;
+        uint256 makerLegFee = (makerEth * 100) / 10_000; // 0.03
+        uint256 takerLegFee = (takerEth * 100) / 10_000; // 0.01
         uint256 totalFee = makerLegFee + takerLegFee;
 
         // Maker funds its leg + maker-side fee from escrow.
-        uint256 makerCost = makerMon + makerLegFee;
+        uint256 makerCost = makerEth + makerLegFee;
         vm.deal(maker, makerCost);
         vm.prank(maker);
         hs.deposit{value: makerCost}();
 
-        Handshake.TradeOrder memory order = _buildOrder(takerEOA, tokenB, makerMon, takerMon, 6);
+        Handshake.TradeOrder memory order = _buildOrder(takerEOA, tokenB, makerEth, takerEth, 6);
         bytes memory sig = _sign(order);
 
-        uint256 msgValue = takerMon + takerLegFee;
+        uint256 msgValue = takerEth + takerLegFee;
         vm.deal(takerEOA, msgValue);
         vm.prank(takerEOA);
         hs.fulfillTrade{value: msgValue}(order, sig);
 
-        // Fee accrual is exact to the wei; both MON legs delivered to EOAs.
+        // Fee accrual is exact to the wei; both ETH legs delivered to EOAs.
         assertEq(hs.pendingFees(feeRecipient), totalFee, "total fee exact to the wei");
-        assertEq(maker.balance, takerMon, "maker received taker MON leg");
-        assertEq(takerEOA.balance, makerMon, "taker received maker MON leg");
+        assertEq(maker.balance, takerEth, "maker received taker ETH leg");
+        assertEq(takerEOA.balance, makerEth, "taker received maker ETH leg");
         assertEq(colA.ownerOf(TOKEN_A), takerEOA, "NFT swapped");
         assertEq(colB.ownerOf(tokenB), maker, "NFT swapped");
         _assertSolvent(takerEOA);
@@ -375,15 +375,15 @@ contract HandshakeAdversarial is Test {
         vm.prank(takerEOA);
         colB.setApprovalForAll(address(hs), true);
 
-        uint256 makerMon = 3 ether;
-        uint256 takerMon = 1 ether;
-        uint256 takerLegFee = (takerMon * 100) / 10_000;
-        uint256 correct = takerMon + takerLegFee;
+        uint256 makerEth = 3 ether;
+        uint256 takerEth = 1 ether;
+        uint256 takerLegFee = (takerEth * 100) / 10_000;
+        uint256 correct = takerEth + takerLegFee;
 
         // Fund the maker so the ONLY thing wrong is the taker's msg.value.
-        _fundMaker(makerMon);
+        _fundMaker(makerEth);
 
-        Handshake.TradeOrder memory order = _buildOrder(takerEOA, tokenB, makerMon, takerMon, 7);
+        Handshake.TradeOrder memory order = _buildOrder(takerEOA, tokenB, makerEth, takerEth, 7);
         bytes memory sig = _sign(order);
 
         // One wei over: rejected.

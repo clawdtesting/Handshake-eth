@@ -2,11 +2,11 @@
 
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { http } from "wagmi";
-import { monad, MONAD_RPC_URLS } from "@/lib/chains/monad";
+import { ethereum, ETH_MAINNET_RPC_URLS } from "@/lib/chains/ethereum";
 
-// Show the Monad logo as the chain icon in the wallet/connect button.
-const monadWithIcon = {
-  ...monad,
+// Show the Ethereum logo as the chain icon in the wallet/connect button.
+const ethereumWithIcon = {
+  ...ethereum,
   iconUrl: "/Logomark.png",
   iconBackground: "#0E100F",
 };
@@ -15,9 +15,9 @@ export const wagmiConfig = getDefaultConfig({
   appName: process.env.NEXT_PUBLIC_APP_NAME ?? "Handshake",
   projectId:
     process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "handshake-dev",
-  chains: [monadWithIcon],
+  chains: [ethereumWithIcon],
   transports: {
-    [monad.id]: http(MONAD_RPC_URLS[0]),
+    [ethereum.id]: http(ETH_MAINNET_RPC_URLS[0]),
   },
   ssr: true,
 });

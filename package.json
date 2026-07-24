@@ -1,5 +1,5 @@
 {
-  "name": "monad-market",
+  "name": "ethereum-market",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "contracts:build": "forge build --root contracts",
     "contracts:test": "forge test --root contracts -vvv",
-    "contracts:deploy": "forge script contracts/script/Deploy.s.sol:Deploy --root contracts --rpc-url $MONAD_RPC_URL --broadcast",
+    "contracts:deploy": "forge script contracts/script/Deploy.s.sol:Deploy --root contracts --rpc-url $ETH_MAINNET_RPC_URL --broadcast",
     "verify:allowlist": "node scripts/verify-allowlist.mjs",
     "contracts:verify": "node scripts/verify-contract.mjs",
     "watch:collections": "node scripts/watch-collections.mjs",

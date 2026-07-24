@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 import { getCollectionMetadata } from "@/lib/nft/collection-metadata";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
@@ -19,6 +19,6 @@ export async function GET(req: Request) {
   const parsed = querySchema.safeParse({ address: searchParams.get("address"), chainId: searchParams.get("chainId") ?? undefined });
   if (!parsed.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
 
-  const metadata = await getCollectionMetadata(parsed.data.address, parsed.data.chainId ?? MONAD_CHAIN_ID);
+  const metadata = await getCollectionMetadata(parsed.data.address, parsed.data.chainId ?? ETH_MAINNET_CHAIN_ID);
   return NextResponse.json({ metadata });
 }

@@ -12,8 +12,8 @@ function draft(overrides: Partial<DealRoomDraft> = {}): DealRoomDraft {
     takerAddress: B,
     makerNFTs: [{ contractAddress: C, tokenId: "1", name: "Molandak #1" }],
     takerNFTs: [],
-    makerMonAmount: "0",
-    takerMonAmount: "4000000000000000000000", // 4000 MON
+    makerEthAmount: "0",
+    takerEthAmount: "4000000000000000000000", // 4000 ETH
     feeBps: 100,
     flatFee: "0",
     offerExpiry: Math.floor(Date.now() / 1000) + 86_400,
@@ -41,16 +41,16 @@ describe("diffDrafts", () => {
     expect(labels).toContain("− Molandak #1");
   });
 
-  it("flags MON deltas with sign, magnitude, and before→after", () => {
+  it("flags ETH deltas with sign, magnitude, and before→after", () => {
     const before = draft();
-    const after = draft({ takerMonAmount: "3500000000000000000000" }); // −500
+    const after = draft({ takerEthAmount: "3500000000000000000000" }); // −500
     const chips = diffDrafts(before, after);
-    const mon = chips.find((c) => c.kind === "mon");
-    expect(mon).toBeDefined();
-    expect(mon!.side).toBe("taker");
-    expect(mon!.label).toContain("−");
-    expect(mon!.label).toContain("500");
-    expect(mon!.label).toContain("4000 → 3500");
+    const eth = chips.find((c) => c.kind === "eth");
+    expect(eth).toBeDefined();
+    expect(eth!.side).toBe("taker");
+    expect(eth!.label).toContain("−");
+    expect(eth!.label).toContain("500");
+    expect(eth!.label).toContain("4000 → 3500");
   });
 
   it("flags expiry changes", () => {

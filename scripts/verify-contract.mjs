@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Verify the deployed Handshake contract on Monad explorers.
+ * Verify the deployed Handshake contract on Ethereum explorers.
  *
  * This wrapper avoids fragile multi-line shell pastes: it preflights that code
  * exists at the target address, ABI-encodes the three-argument constructor, and
@@ -11,14 +11,14 @@ import { spawnSync } from "node:child_process";
 import { createPublicClient, http, isAddress, getAddress } from "viem";
 
 const env = process.env;
-const RPC = env.MONAD_RPC_URL ?? env.NEXT_PUBLIC_MONAD_RPC_URL ?? "https://rpc.monad.xyz";
-const CHAIN_ID = env.CHAIN_ID ?? env.NEXT_PUBLIC_CHAIN_ID ?? "143";
+const RPC = env.ETH_MAINNET_RPC_URL ?? env.NEXT_PUBLIC_ETH_MAINNET_RPC_URL ?? "https://rpc.ethereum.xyz";
+const CHAIN_ID = env.CHAIN_ID ?? env.NEXT_PUBLIC_CHAIN_ID ?? "1";
 const CONTRACT = env.HANDSHAKE_ADDRESS ?? env.NEXT_PUBLIC_SETTLEMENT_CONTRACT_ADDRESS;
 const OWNER = env.CONTRACT_OWNER;
 const FEE_RECIPIENT = env.FEE_RECIPIENT_ADDRESS;
 const INITIAL_COLLECTIONS = parseAddressList(env.INITIAL_COLLECTIONS ?? "");
 const VERIFIER = env.VERIFIER ?? "sourcify";
-const SOURCIFY_URL = env.SOURCIFY_VERIFIER_URL ?? "https://sourcify-api-monad.blockvision.org/";
+const SOURCIFY_URL = env.SOURCIFY_VERIFIER_URL ?? "https://sourcify-api-ethereum.blockvision.org/";
 const ETHERSCAN_URL = env.ETHERSCAN_VERIFIER_URL ?? `https://api.etherscan.io/v2/api?chainid=${CHAIN_ID}`;
 
 function fail(message) {
@@ -67,7 +67,7 @@ const code = await client.getBytecode({ address: contract }).catch((error) => {
   fail(`Could not read contract code from ${RPC}: ${error.shortMessage ?? error.message}`);
 });
 if (!code || code === "0x") {
-  fail(`No contract code found at ${contract} on chain ${CHAIN_ID}. Check the address, RPC, and mainnet/testnet chain id.`);
+  fail(`No contract code found at ${contract} on chain ${CHAIN_ID}. Check the address, RPC, and mainnet chain id.`);
 }
 console.log(`Code:      found (${(code.length - 2) / 2} bytes)`);
 

@@ -19,7 +19,7 @@ import {
   ORDER_TYPES,
   type TradeOrder,
 } from "@/lib/orders/eip712";
-import { MONAD_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 import { settlementAbi } from "@/lib/contracts/settlement";
 import { runWrite } from "@/lib/chains/tx";
 import { shortAddress } from "@/lib/utils";
@@ -33,7 +33,7 @@ import type { DealRoomDetail, TradeOffer } from "@/lib/types";
  *    nonce on-chain (mandatory — two executable versions must never coexist).
  *  - The maker signs ONE EIP-712 TradeOrder matching the agreed terms.
  *  - The taker settles it through the existing offer flow.
- * When settled, shows the signed→settled stopwatch — Monad's finality is the
+ * When settled, shows the signed→settled stopwatch — Ethereum's finality is the
  * demo.
  */
 export function FinalizePanel({
@@ -90,7 +90,7 @@ export function FinalizePanel({
         writeContractAsync,
         account: address,
         walletChainId: chainId,
-        expectedChainId: MONAD_CHAIN_ID,
+        expectedChainId: ETH_MAINNET_CHAIN_ID,
         label: "Retire original offer",
         address: SETTLEMENT_CONTRACT_ADDRESS,
         abi: settlementAbi,
@@ -126,15 +126,19 @@ export function FinalizePanel({
         maker: revision.makerAddress as `0x${string}`,
         taker: revision.takerAddress as `0x${string}`,
         makerNFTs: revision.makerNFTs.map((n) => ({
+          standard: 0 as const,
+          amount: 1n,
           contractAddress: n.contractAddress as `0x${string}`,
           tokenId: BigInt(n.tokenId),
         })),
         takerNFTs: revision.takerNFTs.map((n) => ({
+          standard: 0 as const,
+          amount: 1n,
           contractAddress: n.contractAddress as `0x${string}`,
           tokenId: BigInt(n.tokenId),
         })),
-        makerMonAmount: BigInt(revision.makerMonAmount),
-        takerMonAmount: BigInt(revision.takerMonAmount),
+        makerEthAmount: BigInt(revision.makerEthAmount),
+        takerEthAmount: BigInt(revision.takerEthAmount),
         feeBps: BigInt(revision.feeBps),
         flatFee: BigInt(revision.flatFee),
         nonce: generateNonce(),
@@ -154,15 +158,19 @@ export function FinalizePanel({
           maker: order.maker,
           taker: order.taker,
           makerNFTs: order.makerNFTs.map((n) => ({
-            contractAddress: n.contractAddress,
+            standard: 0 as const,
+          amount: 1n,
+          contractAddress: n.contractAddress,
             tokenId: n.tokenId.toString(),
           })),
           takerNFTs: order.takerNFTs.map((n) => ({
-            contractAddress: n.contractAddress,
+            standard: 0 as const,
+          amount: 1n,
+          contractAddress: n.contractAddress,
             tokenId: n.tokenId.toString(),
           })),
-          makerMonAmount: order.makerMonAmount.toString(),
-          takerMonAmount: order.takerMonAmount.toString(),
+          makerEthAmount: order.makerEthAmount.toString(),
+          takerEthAmount: order.takerEthAmount.toString(),
           feeBps: order.feeBps.toString(),
           flatFee: order.flatFee.toString(),
           nonce: order.nonce.toString(),
@@ -200,7 +208,7 @@ export function FinalizePanel({
           {room.finalOfferId && (
             <Link
               href={`/offers/${room.finalOfferId}`}
-              className="text-sm text-monad-purple underline-offset-4 hover:underline"
+              className="text-sm text-ethereum-purple underline-offset-4 hover:underline"
             >
               View the settled deal
             </Link>
@@ -228,7 +236,7 @@ export function FinalizePanel({
           </p>
           <Link
             href={`/offers/${room.finalOfferId}`}
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-monad-purple to-fuchsia-400 px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg shadow-monad-purple/20 hover:from-monad-purple/90 hover:to-fuchsia-400/90"
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-ethereum-purple to-fuchsia-400 px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg shadow-ethereum-purple/20 hover:from-ethereum-purple/90 hover:to-fuchsia-400/90"
           >
             {isMaker ? "View signed offer" : "Settle the handshake"}
             <ArrowRight className="h-4 w-4" />
@@ -242,10 +250,10 @@ export function FinalizePanel({
   if (room.status !== "agreed") return null;
 
   return (
-    <Card className="border-monad-purple/40">
+    <Card className="border-ethereum-purple/40">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <PenLine className="h-4 w-4 text-monad-purple" />
+          <PenLine className="h-4 w-4 text-ethereum-purple" />
           Terms agreed — make it official
         </CardTitle>
       </CardHeader>

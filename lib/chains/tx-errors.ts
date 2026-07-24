@@ -39,7 +39,7 @@ export function decodeRevert(err: unknown): { name: string; message: string } | 
     }
   }
 
-  // Some Monad RPCs return a plain JSON-RPC error (or put it under `cause`)
+  // Some Ethereum RPCs return a plain JSON-RPC error (or put it under `cause`)
   // instead of letting viem construct ContractFunctionRevertedError. Decode
   // any revert payload ourselves so useful custom errors are not reduced to
   // the generic "would revert" message.
@@ -151,7 +151,7 @@ export function classifyTxError(err: unknown): ClassifiedTxError {
   ) {
     return {
       name: "WrongNetwork",
-      userMessage: "Your wallet is on the wrong network. Switch to Monad and try again.",
+      userMessage: "Your wallet is on the wrong network. Switch to Ethereum and try again.",
       rawMessage,
     };
   }
@@ -164,12 +164,12 @@ export function classifyTxError(err: unknown): ClassifiedTxError {
     return {
       name: "InsufficientFunds",
       userMessage:
-        "You don't have enough MON to cover this amount plus gas. Top up your wallet and retry.",
+        "You don't have enough ETH to cover this amount plus gas. Top up your wallet and retry.",
       rawMessage,
     };
   }
 
-  // 5. Gas too low (Monad RPC rejects estimate-tight limits).
+  // 5. Gas too low (Ethereum RPC rejects estimate-tight limits).
   if (
     messageIncludes(err, "gas limit too low") ||
     messageIncludes(err, "intrinsic gas too low") ||
@@ -178,7 +178,7 @@ export function classifyTxError(err: unknown): ClassifiedTxError {
     return {
       name: "GasTooLow",
       userMessage:
-        "The network rejected the gas limit. Retry — we add extra gas headroom for Monad.",
+        "The network rejected the gas limit. Retry — we add extra gas headroom for Ethereum.",
       rawMessage,
     };
   }
@@ -211,7 +211,7 @@ export function classifyTxError(err: unknown): ClassifiedTxError {
     return {
       name: "RpcError",
       userMessage:
-        "Couldn't reach the Monad network. Check your connection or RPC and try again.",
+        "Couldn't reach the Ethereum network. Check your connection or RPC and try again.",
       rawMessage,
     };
   }

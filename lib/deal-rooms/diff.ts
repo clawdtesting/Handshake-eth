@@ -1,12 +1,12 @@
-import { formatMon } from "@/lib/utils";
+import { formatEth } from "@/lib/utils";
 import type { DealRoomDraft, RevisionNFT } from "@/lib/types";
 
 /**
  * Term-by-term diff between two drafts, rendered as compact "delta chips"
- * on the revision timeline: "+ Molandak #4412", "− 20 MON", "expiry 3d → 24h".
+ * on the revision timeline: "+ Molandak #4412", "− 20 ETH", "expiry 3d → 24h".
  */
 
-export type DiffChipKind = "nft-added" | "nft-removed" | "mon" | "expiry";
+export type DiffChipKind = "nft-added" | "nft-removed" | "eth" | "expiry";
 
 export interface DiffChip {
   kind: DiffChipKind;
@@ -60,9 +60,9 @@ function diffMon(
   const abs = delta > 0n ? delta : -delta;
   return [
     {
-      kind: "mon",
+      kind: "eth",
       side,
-      label: `${sign} ${formatMon(abs.toString())} MON (${formatMon(beforeWei)} → ${formatMon(afterWei)})`,
+      label: `${sign} ${formatEth(abs.toString())} ETH (${formatEth(beforeWei)} → ${formatEth(afterWei)})`,
     },
   ];
 }
@@ -90,8 +90,8 @@ export function diffDrafts(
   const chips: DiffChip[] = [
     ...diffNFTs("maker", before.makerNFTs, after.makerNFTs),
     ...diffNFTs("taker", before.takerNFTs, after.takerNFTs),
-    ...diffMon("maker", before.makerMonAmount, after.makerMonAmount),
-    ...diffMon("taker", before.takerMonAmount, after.takerMonAmount),
+    ...diffMon("maker", before.makerEthAmount, after.makerEthAmount),
+    ...diffMon("taker", before.takerEthAmount, after.takerEthAmount),
   ];
   if (before.offerExpiry !== after.offerExpiry) {
     chips.push({

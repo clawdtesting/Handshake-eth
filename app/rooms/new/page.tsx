@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/empty-state";
 import { TermsEditor } from "@/components/deal-room/terms-editor";
 import { useRoomMutations, useRoomSession } from "@/hooks/use-deal-rooms";
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 import { shortAddress } from "@/lib/utils";
 import type { DealRoomRevision } from "@/lib/types";
 
@@ -42,8 +42,8 @@ function NewRoomInner() {
   });
 
   // When haggling from a wanted post, seed the opening draft from it: the
-  // poster's offered MON on their side, and the requested collection
-  // pre-selected on yours — so a MON-for-NFT counter is a one-field edit.
+  // poster's offered ETH on their side, and the requested collection
+  // pre-selected on yours — so a ETH-for-NFT counter is a one-field edit.
   const { data: wantedPost } = useQuery({
     queryKey: ["wanted-post", wantedPostId],
     enabled: !!wantedPostId,
@@ -61,22 +61,22 @@ function NewRoomInner() {
 
   const seed = useMemo(() => {
     if (!wantedPost) {
-      return { makerCollection: null as string | null, takerMonAmount: "0" };
+      return { makerCollection: null as string | null, takerEthAmount: "0" };
     }
     const lookingFor = wantedPost.lookingFor.toLowerCase();
     const matched = FEATURED_COLLECTIONS.find((c) =>
       lookingFor.includes(c.name.toLowerCase()),
     );
-    let takerMonAmount = "0";
+    let takerEthAmount = "0";
     const amount = wantedPost.offering?.match(/(\d+(?:\.\d+)?)/)?.[1];
     if (amount) {
       try {
-        takerMonAmount = parseEther(amount).toString();
+        takerEthAmount = parseEther(amount).toString();
       } catch {
         // free-text offering without a clean number — leave it blank
       }
     }
-    return { makerCollection: matched?.address ?? null, takerMonAmount };
+    return { makerCollection: matched?.address ?? null, takerEthAmount };
   }, [wantedPost]);
 
   if (!isConnected || !address) {
@@ -134,7 +134,7 @@ function NewRoomInner() {
   }
 
   // Seed draft: viewer is the maker, counterparty the taker. From a wanted
-  // post the taker's offered MON and the requested collection are pre-filled;
+  // post the taker's offered ETH and the requested collection are pre-filled;
   // otherwise both sides start blank.
   const base: DealRoomRevision = {
     id: "new",
@@ -145,8 +145,8 @@ function NewRoomInner() {
     takerAddress: cp,
     makerNFTs: [],
     takerNFTs: [],
-    makerMonAmount: "0",
-    takerMonAmount: seed.takerMonAmount,
+    makerEthAmount: "0",
+    takerEthAmount: seed.takerEthAmount,
     feeBps: config?.feeBps ?? 100,
     flatFee: "0",
     offerExpiry: Math.floor(Date.now() / 1000) + 86_400,
@@ -167,7 +167,7 @@ function NewRoomInner() {
         try {
           await ensureSession();
           const res = await createRoom.mutateAsync({
-            chainId: MONAD_CHAIN_ID,
+            chainId: ETH_MAINNET_CHAIN_ID,
             counterparty: cp,
             sourceWantedPostId: wantedPostId,
             draft,
@@ -187,7 +187,7 @@ export default function NewRoomPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 py-8">
       <h1 className="flex items-center gap-2 text-xl font-bold">
-        <Handshake className="h-5 w-5 text-monad-purple" />
+        <Handshake className="h-5 w-5 text-ethereum-purple" />
         Start a negotiation
       </h1>
       <p className="text-sm text-muted-foreground">

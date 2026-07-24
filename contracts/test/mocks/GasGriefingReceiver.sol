@@ -12,7 +12,7 @@ import {Handshake} from "../../src/Handshake.sol";
 ///         Used to prove the auto-withdraw payout falls back to a recoverable
 ///         escrow credit instead of reverting/OOG-ing the trade — a hostile
 ///         recipient cannot grief settlement. `withdraw()` forwards full gas, so
-///         the same recipient can still pull the credited MON afterwards.
+///         the same recipient can still pull the credited ETH afterwards.
 contract GasGriefingReceiver is IERC721Receiver {
     Handshake public immutable hs;
     uint256 public sink;

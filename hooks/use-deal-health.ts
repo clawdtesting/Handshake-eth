@@ -9,10 +9,10 @@ import {
   settlementAbi,
   transferValidatorAbi,
 } from "@/lib/contracts/settlement";
-import { MONAD_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 import { quoteFees } from "@/lib/fees";
 import { isCollectionBid } from "@/lib/collection-bids";
-import { formatMon, prettyCollectionName, shortAddress } from "@/lib/utils";
+import { formatEth, prettyCollectionName, shortAddress } from "@/lib/utils";
 import type { TradeOffer } from "@/lib/types";
 
 /**
@@ -20,7 +20,7 @@ import type { TradeOffer } from "@/lib/types";
  *
  * The settlement contract reverts with a precise reason (CollectionNotAllowed,
  * NotTokenOwner, MissingApproval, NonceAlreadyUsed, InsufficientEscrow), but
- * Monad's RPC frequently returns a revert without the decodable reason bytes,
+ * Ethereum's RPC frequently returns a revert without the decodable reason bytes,
  * so `simulateContract` collapses to a generic "would revert" message. Instead
  * of decoding the revert, we read the exact preconditions straight from chain
  * and report which one fails — so the UI can say *why* a deal can't be filled.
@@ -38,7 +38,7 @@ export type DealBlockerCode =
   | "maker-not-approved"
   | "nonce-used"
   | "maker-escrow"
-  | "taker-insufficient-mon";
+  | "taker-insufficient-eth";
 
 export interface DealBlocker {
   code: DealBlockerCode;
@@ -60,15 +60,15 @@ const PRIORITY: DealBlockerCode[] = [
   "taker-not-owner",
   "maker-not-approved",
   "maker-escrow",
-  "taker-insufficient-mon",
+  "taker-insufficient-eth",
 ];
 
 export function useDealHealth(
   offer: TradeOffer | undefined,
   connectedTaker: string | undefined,
 ) {
-  // Pin reads to Monad so a wallet on the wrong network can't skew the check.
-  const publicClient = usePublicClient({ chainId: MONAD_CHAIN_ID });
+  // Pin reads to Ethereum so a wallet on the wrong network can't skew the check.
+  const publicClient = usePublicClient({ chainId: ETH_MAINNET_CHAIN_ID });
 
   return useQuery<DealHealth>({
     queryKey: ["deal-health", offer?.id, offer?.status, connectedTaker],
@@ -299,11 +299,11 @@ export function useDealHealth(
         });
       }
 
-      // 5. If the maker owes MON, their escrow must cover it.
-      const makerMon = BigInt(o.makerMonAmount);
-      if (makerMon > 0n) {
+      // 5. If the maker owes ETH, their escrow must cover it.
+      const makerEth = BigInt(o.makerEthAmount);
+      if (makerEth > 0n) {
         const required = quoteFees(
-          makerMon,
+          makerEth,
           0n,
           BigInt(o.feeBps),
         ).makerEscrowRequired;
@@ -319,18 +319,18 @@ export function useDealHealth(
           blockers.push({
             code: "maker-escrow",
             message:
-              "The maker hasn't funded the MON side of this deal in escrow yet.",
+              "The maker hasn't funded the ETH side of this deal in escrow yet.",
           });
         }
       }
 
-      // 6. The taker must be able to cover their MON leg + fees (msg.value).
+      // 6. The taker must be able to cover their ETH leg + fees (msg.value).
       // Gas is on top; we check the value alone so a clear shortfall reads as
-      // "not enough MON" instead of a mystery revert in the eth_call.
+      // "not enough ETH" instead of a mystery revert in the eth_call.
       if (takerOwner) {
         const required = quoteFees(
-          BigInt(o.makerMonAmount),
-          BigInt(o.takerMonAmount),
+          BigInt(o.makerEthAmount),
+          BigInt(o.takerEthAmount),
           BigInt(o.feeBps),
           BigInt(o.flatFee),
         ).takerPays;
@@ -340,8 +340,8 @@ export function useDealHealth(
             .catch(() => null);
           if (typeof balance === "bigint" && balance < required) {
             blockers.push({
-              code: "taker-insufficient-mon",
-              message: `You need ${formatMon(required)} MON to accept this deal, but this wallet holds ${formatMon(balance)} MON.`,
+              code: "taker-insufficient-eth",
+              message: `You need ${formatEth(required)} ETH to accept this deal, but this wallet holds ${formatEth(balance)} ETH.`,
             });
           }
         }

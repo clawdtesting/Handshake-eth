@@ -1,16 +1,16 @@
 # Handshake Protocol — Production Security Audit
 
-**Target:** Handshake — peer-to-peer NFT/MON marketplace on Monad
+**Target:** Handshake — peer-to-peer NFT/ETH marketplace on Ethereum
 **Settlement contract:** `Handshake.sol` (Solidity 0.8.28)
-**Deployed address (claimed):** `0xA9E7f8D08ecd275D9Dd7C95cF9a557B8bce4a277` (Monad mainnet, chainId 143)
+**Deployed address (claimed):** `` (Ethereum mainnet, chainId 1)
 **Fee recipient (claimed):** `0x41678c150b0D11f18011fC3F275ee92652A89b5a`
 **Audit date:** 2026-06-30
 **Auditor role:** External production-readiness audit (adversarial)
 
 > **Scope note / tooling caveat.** Foundry (`forge`/`cast`/`anvil`), Slither and
 > Aderyn are not installed in this environment, and **outbound access to
-> `rpc.monad.xyz` and the Monad explorer is blocked by the environment egress
-> policy** (the proxy returns `403` on `CONNECT` to `rpc.monad.xyz:443`). As a
+> `rpc.ethereum.xyz` and the Ethereum explorer is blocked by the environment egress
+> policy** (the proxy returns `403` on `CONNECT` to `rpc.ethereum.xyz:443`). As a
 > result, **Phase 2 (deployed-bytecode / constructor-arg / owner verification)
 > could not be executed on-chain from this session** and is listed as a
 > mandatory pre-launch gate. Everything else (source review, ABI compatibility,
@@ -45,11 +45,11 @@ algorithmic**:
 2. **The owner is a single key** controlling `pause`, fee config and fee
    recipient — a single point of failure / availability risk.
 3. **Production config gaps** — placeholder WalletConnect project id, and a
-   block-explorer URL (`monadscan.com`) that does not match the project's stated
-   explorer (`monadexplorer.com`), which will break every explorer link.
+   block-explorer URL (`etherscan.io`) that does not match the project's stated
+   explorer (`ethereumexplorer.com`), which will break every explorer link.
 4. **Smart-contract / AA wallets cannot trade** — both the contract
    (`ECDSA.recover`) and the off-chain verifier require EOA signatures (no
-   EIP-1271). This fails *closed* (no theft) but excludes a class of Monad users.
+   EIP-1271). This fails *closed* (no theft) but excludes a class of Ethereum users.
 
 **Verdict: READY AFTER MINOR FIXES** — contingent on completing the on-chain
 deployment-verification gate and the operational fixes below. No code change to
@@ -75,7 +75,7 @@ POST /api/offers ──► verify EIP-712 sig ──► Supabase (service-role o
 Taker settles ─────────────────────────────►  Handshake.fulfillTrade
                                                │ verify sig, owner, approval, payment
                                                │ consume nonce, debit maker escrow
-                                               │ accrue fee (pull), swap NFTs, move MON
+                                               │ accrue fee (pull), swap NFTs, move ETH
    POST /api/offers/[id]/complete ◄──────────  TradeExecuted(orderHash, …)
        └─ verifies receipt + event on-chain (authoritative), then marks DB completed
 ```
@@ -88,7 +88,7 @@ Taker settles ──────────────────────
 | EIP-712 | `lib/orders/eip712.ts` (types, domain, hash, verify, nonce) |
 | ABI / wrappers | `lib/contracts/settlement.ts` (`settlementAbi`, `erc721Abi`, error map) |
 | Tx engine | `lib/chains/tx.ts` (`runWrite`), `gas.ts`, `tx-errors.ts`, `tx-log.ts` |
-| Chain config | `lib/chains/monad.ts`, `lib/wagmi.ts`, `lib/chains/client.ts` |
+| Chain config | `lib/chains/ethereum.ts`, `lib/wagmi.ts`, `lib/chains/client.ts` |
 | Fees | `lib/fees.ts`, `components/trade/fee-breakdown.tsx` |
 | Flows | `app/create/page.tsx`, `app/offers/[id]/page.tsx`, `components/wallet/escrow-panel.tsx`, `network-guard.tsx` |
 | API | `app/api/offers/route.ts`, `…/[id]/complete`, `…/[id]/cancel`, `app/api/wanted/*`, `config`, `health` |
@@ -100,7 +100,7 @@ Taker settles ──────────────────────
 (OpenZeppelin Contracts ^5.1.0), plus `ECDSA` and `IERC721`. `Ownable2Step` (not
 plain `Ownable`) is correctly chosen so ownership transfer requires the new owner
 to accept — preventing transfer to a wrong/dead address. No upgradeability, no
-`delegatecall`, no `selfdestruct`, no `receive`/`fallback` (raw MON sends revert
+`delegatecall`, no `selfdestruct`, no `receive`/`fallback` (raw ETH sends revert
 — good, prevents stuck dust). Solidity 0.8.28, optimizer on (1000 runs), EVM
 `cancun`.
 
@@ -159,7 +159,7 @@ power of any single compromised key.
 **Affected:** Deployment at `0xA9E7…a277`
 
 **Description.** Phase 2 could not be performed: this environment cannot reach
-`rpc.monad.xyz` or the explorer (egress policy `403`). Therefore I cannot confirm
+`rpc.ethereum.xyz` or the explorer (egress policy `403`). Therefore I cannot confirm
 that the deployed contract's runtime bytecode matches this source compiled with
 `solc 0.8.28`, optimizer `runs=1000`, EVM `cancun`; nor that the on-chain `owner`
 and `feeRecipient` equal the intended addresses; nor that `feeBps`/`flatSwapFee`
@@ -170,11 +170,11 @@ not verified is a trust hole regardless of how good the source is.
 
 **Recommendation (must complete before launch).** From an environment with RPC:
 ```
-cast code 0xA9E7f8D08ecd275D9Dd7C95cF9a557B8bce4a277 --rpc-url https://rpc.monad.xyz
-forge verify-bytecode 0xA9E7…a277 Handshake --rpc-url https://rpc.monad.xyz
-cast call 0xA9E7…a277 "owner()(address)"        --rpc-url https://rpc.monad.xyz
-cast call 0xA9E7…a277 "feeRecipient()(address)" --rpc-url https://rpc.monad.xyz
-cast call 0xA9E7…a277 "feeBps()(uint256)"       --rpc-url https://rpc.monad.xyz
+cast code  --rpc-url https://rpc.ethereum.xyz
+forge verify-bytecode 0xA9E7…a277 Handshake --rpc-url https://rpc.ethereum.xyz
+cast call 0xA9E7…a277 "owner()(address)"        --rpc-url https://rpc.ethereum.xyz
+cast call 0xA9E7…a277 "feeRecipient()(address)" --rpc-url https://rpc.ethereum.xyz
+cast call 0xA9E7…a277 "feeBps()(uint256)"       --rpc-url https://rpc.ethereum.xyz
 cast call 0xA9E7…a277 "DOMAIN_SEPARATOR via domainSeparator()(bytes32)" --rpc-url …
 ```
 Confirm `owner` is the intended multisig (M-01), `feeRecipient ==
@@ -241,15 +241,15 @@ Consider a per-maker cap on simultaneous open orders referencing the same token.
 
 ### M-05 — Block-explorer URL misconfiguration breaks all explorer links
 **Severity:** Medium → Low (config) · **Type:** Production config
-**Affected:** `lib/chains/monad.ts` (`MONAD_EXPLORER_URL` default `https://monadscan.com`), `.env.example`
+**Affected:** `lib/chains/ethereum.ts` (`ETH_MAINNET_EXPLORER_URL` default `https://etherscan.io`), `.env.example`
 
 **Description.** The default explorer (and `.env.example`) point to
-`monadscan.com`, while the project's stated explorer is `monadexplorer.com`.
+`etherscan.io`, while the project's stated explorer is `ethereumexplorer.com`.
 Every `explorerTxUrl` / `explorerAddressUrl` / `explorerTokenUrl` link (settlement
 tx, cancellation tx, NFT contract, address) will point at the wrong host and can
 404 / mislead users verifying their own trades.
 
-**Recommendation.** Set `NEXT_PUBLIC_MONAD_EXPLORER_URL=https://monadexplorer.com`
+**Recommendation.** Set `NEXT_PUBLIC_ETH_MAINNET_EXPLORER_URL=https://ethereumexplorer.com`
 in production and fix the default + `.env.example`. Verify the exact mainnet
 explorer host and its `/tx`, `/address`, `/token` path scheme.
 
@@ -270,16 +270,16 @@ WalletConnect Cloud.
 
 ---
 
-### L-01 — Maker-as-contract that rejects MON can grief takers (self-inflicted, simulated away)
+### L-01 — Maker-as-contract that rejects ETH can grief takers (self-inflicted, simulated away)
 **Severity:** Low · **Type:** Griefing / revert path
-**Affected:** `fulfillTrade` → `_sendNative(order.maker, order.takerMonAmount)`
+**Affected:** `fulfillTrade` → `_sendNative(order.maker, order.takerEthAmount)`
 
-**Description.** If the maker is a contract that rejects native MON and the order
-has `takerMonAmount > 0`, the taker's fill reverts on the maker payout. This only
+**Description.** If the maker is a contract that rejects native ETH and the order
+has `takerEthAmount > 0`, the taker's fill reverts on the maker payout. This only
 hurts the maker's own order and is caught by pre-send simulation, so a taker
 almost never pays gas for it. No third-party harm, no fund loss.
 
-**Recommendation.** None required. Optionally document; or route maker MON payout
+**Recommendation.** None required. Optionally document; or route maker ETH payout
 through the same pull-payment pattern as fees for uniformity (adds gas/complexity
 — not recommended for v1).
 
@@ -288,7 +288,7 @@ through the same pull-payment pattern as fees for uniformity (adds gas/complexit
 ### L-02 — Fee dust from integer rounding (by design)
 **Severity:** Low / Informational · **Affected:** `fulfillTrade`, `quoteFees`, `lib/fees.ts`
 
-`fee = amount * feeBps / 10_000` floors. For tiny MON legs the protocol fee
+`fee = amount * feeBps / 10_000` floors. For tiny ETH legs the protocol fee
 rounds to 0. This is the standard, safe rounding direction (never over-charges,
 never creates an accounting deficit) and the off-chain `quoteFees` mirrors it
 exactly. No action needed.
@@ -347,7 +347,7 @@ clearly non-settleable structure), so there is no latent fillable order.
    user/recipient-owned. This is the single most important property and it holds.
 2. **Strict Checks-Effects-Interactions + `nonReentrant`** on `fulfillTrade`,
    `withdraw`, `withdrawFees`. Nonce consumed and escrow debited *before* any NFT
-   transfer or MON send. Cross-function reentry into value paths is blocked.
+   transfer or ETH send. Cross-function reentry into value paths is blocked.
 3. **Atomic swap safety under hostile callbacks.** Even though `safeTransferFrom`
    invokes `onERC721Received`, a malicious taker/maker contract that mutates state
    mid-swap can only cause the *whole* transaction to revert (the second NFT batch
@@ -362,7 +362,7 @@ clearly non-settleable structure), so there is no latent fillable order.
    signature maps to the same `(maker, nonce)` and is blocked. Domain separator
    binds `chainId` + `verifyingContract` (recomputed across forks by OZ EIP712).
 7. **`Ownable2Step`** prevents fatal ownership-transfer mistakes.
-8. **Exact-payment enforcement.** `msg.value != takerMonAmount + takerLegFee +
+8. **Exact-payment enforcement.** `msg.value != takerEthAmount + takerLegFee +
    flatFee → revert` — no overpayment can be stranded; no `receive`/`fallback`
    means stray sends revert instead of getting stuck.
 9. **Pause leaves exits open.** While paused, users can still `withdraw`,
@@ -385,7 +385,7 @@ clearly non-settleable structure), so there is no latent fillable order.
 | F-3 | Medium | M-06 — placeholder WalletConnect project id. |
 | F-4 | Low | M-04 — feed can display stale "open" deals; mitigated by pre-send `simulateContract`. |
 | F-5 | Low | `FeeBreakdown` defaults `feeBps=100n`; the **create→review** screen renders it *without* passing the live `feeBps`, so if the owner ever raises the storage fee before signing, the *preview* shows 1% while the actually-signed (and escrow-required) fee is higher. The offers/[id] page passes `feeBps` correctly. Cosmetic mismatch only. |
-| F-6 | Low | `bufferedGas` returns `undefined` on estimate failure and the write proceeds with wallet-default gas; on Monad this can re-introduce the "gas too low" path the buffer exists to avoid. Consider a sane floor instead of `undefined`. |
+| F-6 | Low | `bufferedGas` returns `undefined` on estimate failure and the write proceeds with wallet-default gas; on Ethereum this can re-introduce the "gas too low" path the buffer exists to avoid. Consider a sane floor instead of `undefined`. |
 
 **Frontend strengths.** `runWrite` is a genuinely good shared write runner:
 chain-id validated *before* any wallet prompt; `simulateContract` catches reverts
@@ -400,8 +400,8 @@ cross-chain settlement attempts.
 
 ## EIP-712 Review (Phase 5) — verified equivalent
 
-* **Domain:** `name="MonadMarket"`, `version="1"`, `chainId`, `verifyingContract`
-  — identical in `EIP712("MonadMarket","1")` and `getOrderDomain`.
+* **Domain:** `name="EthereumMarket"`, `version="1"`, `chainId`, `verifyingContract`
+  — identical in `EIP712("EthereumMarket","1")` and `getOrderDomain`.
 * **Type strings:** `NFT_ITEM_TYPEHASH` and `TRADE_ORDER_TYPEHASH` (with the
   nested `NFTItem` appended, fields in declaration order) exactly match viem's
   encoding of `ORDER_TYPES`.
@@ -410,7 +410,7 @@ cross-chain settlement attempts.
   reproduces.
 * **Numeric proof.** I reimplemented the contract's hashing by hand (typehashes,
   `_hashNFTItems`, struct hash, OZ domain separator, `0x1901‖domainSep‖structHash`)
-  and compared to `viem.hashTypedData` for a representative multi-NFT/MON order:
+  and compared to `viem.hashTypedData` for a representative multi-NFT/ETH order:
 
   ```
   TRADE_ORDER_TYPEHASH: 0xdd31ca13147626926d8a276ffca91f63bead3dae140516d9d7b84ab7b93fa94c
@@ -431,12 +431,12 @@ cross-chain settlement attempts.
 
 ## Payment & NFT Security (Phases 6–7) — summary
 
-* **MON in:** exact `msg.value` check; maker side debited from isolated escrow
+* **ETH in:** exact `msg.value` check; maker side debited from isolated escrow
   with a sufficiency check; **no path lets the owner touch escrow**.
-* **MON out:** `.call` with full gas inside `nonReentrant`, balance zeroed before
+* **ETH out:** `.call` with full gas inside `nonReentrant`, balance zeroed before
   send (`withdraw`/`withdrawFees`), CEI respected; failed transfer reverts the
   whole settlement (fees use pull-payment to avoid bricking).
-* **Overflow:** Solidity 0.8 checked math; fee sums bounded by MON supply.
+* **Overflow:** Solidity 0.8 checked math; fee sums bounded by ETH supply.
 * **NFTs:** ownership + approval verified per item for both sides; `safeTransferFrom`
   used; duplicate token in one side → second transfer reverts (fails closed);
   ERC-1155 / non-ERC721 addresses revert on `ownerOf` (fails closed); malicious
@@ -461,7 +461,7 @@ cross-chain settlement attempts.
 | Incorrect `msg.value` | **Blocked** — `IncorrectPayment`. |
 | Fee manipulation by owner on signed order | **Blocked** — fee bound in signature. |
 | Reverting fee recipient bricking trades | **Blocked** — pull payment; tested. |
-| Front-running an open NFT→MON sell | **Possible but benign** — losing taker reverts (`NonceAlreadyUsed`), no loss; pre-send simulation limits wasted gas. Standard orderbook MEV. |
+| Front-running an open NFT→ETH sell | **Possible but benign** — losing taker reverts (`NonceAlreadyUsed`), no loss; pre-send simulation limits wasted gas. Standard orderbook MEV. |
 | Owner draining principal | **Not possible** — no such function. |
 | Stale frontend / RPC / indexer state | **Partially** — see M-04; simulation + query invalidation mitigate. |
 | Wallet disconnect mid-flow | Handled — chain re-validated each write; classified errors. |
@@ -487,7 +487,7 @@ cross-chain settlement attempts.
   timelock)**; confirm `feeRecipient == 0x4167…9b5a`; confirm `feeBps`/
   `flatSwapFee`. *(M-01/M-02)*
 - ☐ Set a real `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` (fail build if missing). *(M-06)*
-- ☐ Fix `NEXT_PUBLIC_MONAD_EXPLORER_URL` to the real mainnet explorer and verify
+- ☐ Fix `NEXT_PUBLIC_ETH_MAINNET_EXPLORER_URL` to the real mainnet explorer and verify
   link paths. *(M-05)*
 - ☐ Decide & document EOA-only vs add EIP-1271 (`SignatureChecker`) support. *(M-03)*
 
@@ -529,7 +529,7 @@ This is **not** "READY FOR MAINNET" today only because two true launch gates
 remain open: (1) on-chain verification of the deployed bytecode/owner/fee
 recipient — which **must** be completed from an RPC-capable environment (it could
 not be done here), and (2) moving the owner to a multisig. Close the blocker
-checklist above and Handshake is fit to secure real assets on Monad.
+checklist above and Handshake is fit to secure real assets on Ethereum.
 
 > **Re-audit recommendation.** Have the on-chain Phase 2 verification and the
 > multisig migration confirmed by a second reviewer with live RPC access, and run

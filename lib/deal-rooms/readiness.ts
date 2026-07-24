@@ -1,5 +1,5 @@
 import { publicClient } from "@/lib/chains/client";
-import { SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 import {
   erc721Abi,
   findDisallowedCollections,
@@ -193,7 +193,7 @@ export async function evaluateReadiness(
           [`${taker}:${c}`, await isApproved(c as `0x${string}`, taker)] as const
       )
     ),
-    BigInt(revision.makerMonAmount) > 0n ? escrowBalance(maker) : Promise.resolve(0n),
+    BigInt(revision.makerEthAmount) > 0n ? escrowBalance(maker) : Promise.resolve(0n),
     allCollections.length > 0
       ? findDisallowedCollections(publicClient, SETTLEMENT_CONTRACT_ADDRESS, allCollections)
       : Promise.resolve([]),
@@ -215,20 +215,20 @@ export async function evaluateReadiness(
     ...sideChecks("taker", taker, revision.takerNFTs, takerOwners, approvals),
   ];
 
-  // Maker MON escrow.
-  if (BigInt(revision.makerMonAmount) > 0n) {
-    const needed = BigInt(revision.makerMonAmount);
+  // Maker ETH escrow.
+  if (BigInt(revision.makerEthAmount) > 0n) {
+    const needed = BigInt(revision.makerEthAmount);
     if (makerEscrow === null) {
       checks.push({
         id: "maker-escrow",
-        label: "Maker MON escrow",
+        label: "Maker ETH escrow",
         status: "unknown",
         actor: "maker",
       });
     } else {
       checks.push({
         id: "maker-escrow",
-        label: "Maker MON escrow",
+        label: "Maker ETH escrow",
         status: makerEscrow >= needed ? "ok" : "action_required",
         actor: "maker",
         detail:

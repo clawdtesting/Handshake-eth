@@ -45,7 +45,7 @@ export function prettyCollectionName(name?: string | null): string | null {
     .join(" ");
 }
 
-export function formatMon(wei: bigint | string, maxDecimals = 4): string {
+export function formatEth(wei: bigint | string, maxDecimals = 4): string {
   const value = typeof wei === "string" ? BigInt(wei) : wei;
   const formatted = formatEther(value);
   const [whole, frac = ""] = formatted.split(".");

@@ -29,13 +29,13 @@ export function TxDebugPanel() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="rounded-md border border-monad-purple/40 bg-background/90 px-2.5 py-1.5 text-[11px] text-monad-purple shadow-lg backdrop-blur"
+        className="rounded-md border border-ethereum-purple/40 bg-background/90 px-2.5 py-1.5 text-[11px] text-ethereum-purple shadow-lg backdrop-blur"
       >
         tx log ({records.length}){errors > 0 ? ` · ${errors} err` : ""}
       </button>
 
       {open && (
-        <div className="mt-2 max-h-[60vh] w-[min(92vw,28rem)] overflow-y-auto rounded-lg border border-monad-purple/30 bg-background/95 p-2 shadow-2xl backdrop-blur">
+        <div className="mt-2 max-h-[60vh] w-[min(92vw,28rem)] overflow-y-auto rounded-lg border border-ethereum-purple/30 bg-background/95 p-2 shadow-2xl backdrop-blur">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-muted-foreground">transaction log</span>
             <button
@@ -79,7 +79,7 @@ export function TxDebugPanel() {
                       {r.simulationOk === true ? " · sim✓" : ""}
                     </div>
                     {r.txHash && (
-                      <div className="truncate text-[10px] text-monad-purple">
+                      <div className="truncate text-[10px] text-ethereum-purple">
                         {r.txHash}
                       </div>
                     )}

@@ -18,7 +18,7 @@ function notOk(status = 404, body = "not found") {
 beforeEach(() => {
   vi.resetModules();
   process.env.OPENSEA_API_KEY = "test-key";
-  process.env.OPENSEA_CHAIN = "monad";
+  process.env.OPENSEA_CHAIN = "ethereum";
   delete process.env.OPENSEA_BASE_URL;
   global.fetch = vi.fn();
 });
@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 describe("openseaProvider", () => {
-  it("uses the Monad chain slug for token lookups", async () => {
+  it("uses the Ethereum chain slug for token lookups", async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
       ok({
@@ -51,7 +51,7 @@ describe("openseaProvider", () => {
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.opensea.io/api/v2/chain/monad/contract/0x818030837e8350ba63e64d7dc01a547fa73c8279/nfts/10000",
+      "https://api.opensea.io/api/v2/chain/ethereum/contract/0x818030837e8350ba63e64d7dc01a547fa73c8279/nfts/10000",
       expect.objectContaining({
         headers: expect.objectContaining({ "x-api-key": "test-key" }),
       }),
@@ -87,7 +87,7 @@ describe("openseaProvider", () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "https://api.opensea.io/api/v2/metadata/monad/0x818030837e8350ba63e64d7dc01a547fa73c8279/10000",
+      "https://api.opensea.io/api/v2/metadata/ethereum/0x818030837e8350ba63e64d7dc01a547fa73c8279/10000",
       expect.any(Object),
     );
     expect(token?.imageUrl).toBe("https://metadata.seadn.io/10k.png");

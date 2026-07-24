@@ -17,7 +17,7 @@ const config: Config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        monad: {
+        ethereum: {
           purple: "#836EF9",
           blue: "#200052",
           berry: "#A0055D",

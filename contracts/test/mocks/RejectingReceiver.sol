@@ -7,7 +7,7 @@ import {Handshake} from "../../src/Handshake.sol";
 
 /// @title RejectingReceiver
 /// @notice A contract taker that accepts NFTs but REVERTS on any plain native
-///         transfer (no receive/fallback). As a MON payout recipient it forces
+///         transfer (no receive/fallback). As a ETH payout recipient it forces
 ///         the stipended send to fail, driving Handshake's _payout fallback-
 ///         credit branch (escrowBalance[to] += amount) — the one state write
 ///         after external interactions — on EVERY priced fill. The fuzzed

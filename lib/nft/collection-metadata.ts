@@ -258,7 +258,7 @@ async function fromOpenSea(
     accept: "application/json",
     "x-api-key": process.env.OPENSEA_API_KEY,
   };
-  const chain = process.env.OPENSEA_CHAIN ?? "monad";
+  const chain = process.env.OPENSEA_CHAIN ?? "ethereum";
   const contractRes = await fetch(
     `https://api.opensea.io/api/v2/chain/${chain}/contract/${address}`,
     { headers, next: { revalidate: 600 } },

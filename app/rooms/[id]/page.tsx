@@ -91,7 +91,7 @@ export default function DealRoomPage({
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-10">
-            <Handshake className="h-10 w-10 text-monad-purple" />
+            <Handshake className="h-10 w-10 text-ethereum-purple" />
             <div>
               <h1 className="text-lg font-semibold">Sign in to Deal Rooms</h1>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
@@ -170,7 +170,7 @@ export default function DealRoomPage({
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="flex items-center gap-2 text-xl font-bold">
-          <Handshake className="h-5 w-5 text-monad-purple" />
+          <Handshake className="h-5 w-5 text-ethereum-purple" />
           Deal Room
         </h1>
         <RoomStatusBadge status={room.status} />
@@ -204,7 +204,7 @@ export default function DealRoomPage({
           Negotiating changes to{" "}
           <Link
             href={`/offers/${room.sourceOfferId}`}
-            className="text-monad-purple underline-offset-4 hover:underline"
+            className="text-ethereum-purple underline-offset-4 hover:underline"
           >
             an existing signed offer
           </Link>
@@ -354,7 +354,7 @@ export default function DealRoomPage({
                 <p className="font-medium text-foreground">How this works</p>
                 <p>1. Counter freely — drafts are signature-free and can never move assets.</p>
                 <p>2. When you both agree, the maker signs one final order.</p>
-                <p>3. One atomic transaction settles it. Sub-second on Monad.</p>
+                <p>3. One atomic transaction settles it. Sub-second on Ethereum.</p>
                 <Button
                   size="sm"
                   variant="ghost"

@@ -20,10 +20,10 @@ describe("classifyTxError", () => {
       new Error("insufficient funds for gas * price + value"),
     );
     expect(result.name).toBe("InsufficientFunds");
-    expect(result.userMessage).toMatch(/enough MON/i);
+    expect(result.userMessage).toMatch(/enough ETH/i);
   });
 
-  it("detects gas-too-low (Monad RPC rejection)", () => {
+  it("detects gas-too-low (Ethereum RPC rejection)", () => {
     const result = classifyTxError(new Error("Gas limit too low"));
     expect(result.name).toBe("GasTooLow");
   });
@@ -50,7 +50,7 @@ describe("classifyTxError", () => {
     expect(result.name).toBe("ContractReverted");
   });
 
-  it("decodes revert data nested in a plain Monad RPC error", () => {
+  it("decodes revert data nested in a plain Ethereum RPC error", () => {
     const data = encodeErrorResult({
       abi: settlementAbi,
       errorName: "TransferNotEffective",
