@@ -87,7 +87,7 @@ describe("collection logo resolution", () => {
     // placeholder). This proves no Monad-era local logo override survives.
     const meta = await getCollectionMetadata(T00NS, CHAIN);
     expect(meta.source).not.toBe("official");
-    expect(meta.image).toBe("/Logomark.png");
+    expect(meta.image).toBe("/Logomark.svg");
   });
 
   it("rejects an mp4 contractURI image and falls through to opensea", async () => {
@@ -170,14 +170,14 @@ describe("collection logo resolution", () => {
     mocks.safeFetchJson.mockResolvedValue({ image: mp4, animation_url: mp4 });
     const meta = await getCollectionMetadata(address, CHAIN);
     expect(meta.source).toBe("placeholder");
-    expect(meta.image).toBe("/Logomark.png");
+    expect(meta.image).toBe("/Logomark.svg");
   });
 
   it("falls back to the placeholder when every source fails", async () => {
     const address = freshAddress();
     const meta = await getCollectionMetadata(address, CHAIN);
     expect(meta.source).toBe("placeholder");
-    expect(meta.image).toBe("/Logomark.png");
+    expect(meta.image).toBe("/Logomark.svg");
   });
 
   it("probes extensionless remote images and rejects non-image content types", async () => {

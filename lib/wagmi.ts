@@ -7,7 +7,7 @@ import { ethereum, ETH_MAINNET_RPC_URLS } from "@/lib/chains/ethereum";
 // Show the Ethereum logo as the chain icon in the wallet/connect button.
 const ethereumWithIcon = {
   ...ethereum,
-  iconUrl: "/Logomark.png",
+  iconUrl: "/Logomark.svg",
   iconBackground: "#0E100F",
 };
 

@@ -81,7 +81,7 @@ export function collectionTradeStatus(
 export const FEATURED_COLLECTIONS: FeaturedCollection[] = [
   // Single launch collection on Ethereum mainnet. All prior Monad-era
   // collections were removed post-migration. The logo/artwork is pulled from
-  // T00ns' own on-chain/indexer metadata (SafeCollectionImage); "/Logomark.png"
+  // T00ns' own on-chain/indexer metadata (SafeCollectionImage); "/Logomark.svg"
   // is only a fallback for when metadata has no image. No local logo file is
   // pinned so the collection's real imagery is always used.
   //
@@ -92,7 +92,7 @@ export const FEATURED_COLLECTIONS: FeaturedCollection[] = [
   {
     name: "T00ns",
     address: "0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9",
-    image: "/Logomark.png",
+    image: "/Logomark.svg",
   },
 ];
 
