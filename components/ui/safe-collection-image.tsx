@@ -30,7 +30,7 @@ export function SafeCollectionImage({
   chainId = ETH_MAINNET_CHAIN_ID,
   alt,
   className,
-  fallbackSrc = "/Logomark.png",
+  fallbackSrc = "/Logomark.svg",
 }: {
   collectionAddress?: string | null;
   chainId?: number;

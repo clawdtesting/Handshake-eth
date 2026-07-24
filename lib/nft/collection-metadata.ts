@@ -4,7 +4,7 @@ import { getFeaturedCollection } from "@/lib/featured-collections";
 import { safeFetchJson, safeProbeContentType } from "@/lib/nft/safe-fetch";
 import { resolveUri } from "@/lib/nft/onchain-metadata";
 
-export const COLLECTION_PLACEHOLDER_IMAGE = "/Logomark.png";
+export const COLLECTION_PLACEHOLDER_IMAGE = "/Logomark.svg";
 
 export interface CollectionMetadata {
   name: string | null;

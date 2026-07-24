@@ -419,7 +419,16 @@ function WantedOfferSlide() {
               Collector offers
             </p>
             <div className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3 text-center">
-              <p className="text-[1.005rem] font-bold text-cyan-200">6K ETH</p>
+              <img
+                src="/Logomark.svg"
+                alt="Ethereum logo"
+                width={28}
+                height={28}
+                className="mx-auto"
+              />
+              <p className="mt-2 text-[1.005rem] font-bold text-cyan-200">
+                6K ETH
+              </p>
               <p className="mt-1 text-xs text-foreground/90">plus fees</p>
             </div>
           </div>
@@ -543,6 +552,13 @@ function CustomTradeVisual() {
             </div>
             <span className="text-xl font-bold text-ethereum-purple">+</span>
             <div className="flex h-16 w-14 flex-col items-center justify-center rounded-xl border border-ethereum-purple/35 bg-background/80 text-center">
+              <img
+                src="/Logomark.svg"
+                alt="Ethereum logo"
+                width={22}
+                height={22}
+                className="mb-1"
+              />
               <span className="text-xs font-semibold text-ethereum-purple">
                 ETH
               </span>
@@ -691,6 +707,14 @@ function SellNftSlide() {
 
       <div className="relative z-10 mt-2.5 flex items-center justify-between rounded-2xl border border-ethereum-purple/50 bg-gradient-to-r from-ethereum-purple/30 via-[#121038] to-ethereum-purple/30 p-2.5">
         <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-ethereum-purple/60 bg-ethereum-purple/20 p-2">
+            <img
+              src="/Logomark.svg"
+              alt="Ethereum logo"
+              width={24}
+              height={24}
+            />
+          </span>
           <span>
             <span className="block text-[13px] font-bold text-purple-300">
               Built for Ethereum
@@ -702,6 +726,7 @@ function SellNftSlide() {
         </div>
         <span className="hidden items-center gap-2 rounded-lg bg-black/50 px-2.5 py-1.5 text-[11px] text-muted-foreground sm:inline-flex">
           Powered by
+          <img src="/Logomark.svg" alt="" width={18} height={18} />
           <strong className="text-white">ETH_MAINNET</strong>
         </span>
       </div>
