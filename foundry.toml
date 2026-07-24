@@ -8,6 +8,10 @@ libs = ["contracts/lib", "node_modules"]
 solc_version = "0.8.28"
 optimizer = true
 optimizer_runs = 1000
+# The royalty-quoting path in Handshake.sol exceeds the legacy codegen stack
+# limit ("stack too deep"); compile through the Yul IR pipeline so the optimizer
+# can schedule those locals. Must mirror contracts/foundry.toml.
+via_ir = true
 evm_version = "cancun"
 # ReturnBomber intentionally has a payable fallback and no receive() so tests
 # exercise fallback returndata on bare native transfers. Suppress only that
