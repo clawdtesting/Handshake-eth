@@ -9,14 +9,14 @@ import { Loader2, Vault } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { MONAD_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 import { settlementAbi } from "@/lib/contracts/settlement";
 import { runWrite } from "@/lib/chains/tx";
-import { formatMon } from "@/lib/utils";
+import { formatEth } from "@/lib/utils";
 
 /**
- * Self-managed MON escrow on the settlement contract. Funds maker-side
- * MON legs of deals and holds sale proceeds until users claim them; fully
+ * Self-managed ETH escrow on the settlement contract. Funds maker-side
+ * ETH legs of deals and holds sale proceeds until users claim them; fully
  * user-controlled (deposit/withdraw anytime).
  */
 export function EscrowPanel() {
@@ -51,7 +51,7 @@ export function EscrowPanel() {
     if (!publicClient || !address) return;
     const wei = parsedAmount();
     if (!wei) {
-      toast.error("Enter a valid MON amount");
+      toast.error("Enter a valid ETH amount");
       return;
     }
     if (action === "withdraw" && wei > (balanceQuery.data ?? 0n)) {
@@ -65,7 +65,7 @@ export function EscrowPanel() {
         writeContractAsync,
         account: address,
         walletChainId: chainId,
-        expectedChainId: MONAD_CHAIN_ID,
+        expectedChainId: ETH_MAINNET_CHAIN_ID,
         label: action === "deposit" ? "Deposit escrow" : "Withdraw escrow",
         address: SETTLEMENT_CONTRACT_ADDRESS,
         abi: settlementAbi,
@@ -78,8 +78,8 @@ export function EscrowPanel() {
       });
       toast.success(
         action === "deposit"
-          ? `Deposited ${formatMon(wei)} MON to escrow`
-          : `Withdrew ${formatMon(wei)} MON from escrow`
+          ? `Deposited ${formatEth(wei)} ETH to escrow`
+          : `Withdrew ${formatEth(wei)} ETH from escrow`
       );
       setAmount("");
       balanceQuery.refetch();
@@ -96,19 +96,19 @@ export function EscrowPanel() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <Vault className="h-4 w-4 text-monad-purple" /> MON escrow
+          <Vault className="h-4 w-4 text-ethereum-purple" /> ETH escrow
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Funds the MON side of deals you propose and receives MON proceeds from
+          Funds the ETH side of deals you propose and receives ETH proceeds from
           completed sales. Only you can deposit or withdraw — the platform has
           no access.
         </p>
-        <p className="text-2xl font-bold text-monad-purple">
+        <p className="text-2xl font-bold text-ethereum-purple">
           {balanceQuery.isLoading
             ? "…"
-            : `${formatMon(balanceQuery.data ?? 0n)} MON`}
+            : `${formatEth(balanceQuery.data ?? 0n)} ETH`}
         </p>
         <div className="flex gap-2">
           <Input

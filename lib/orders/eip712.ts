@@ -7,7 +7,7 @@ import {
   verifyTypedData,
 } from "viem";
 import { verifyTypedData as verifyTypedDataOnchain } from "viem/actions";
-import { MONAD_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 
 /**
  * EIP-712 order model. Must stay byte-compatible with
@@ -20,22 +20,26 @@ export const ORDER_TYPES = {
     { name: "taker", type: "address" },
     { name: "makerNFTs", type: "NFTItem[]" },
     { name: "takerNFTs", type: "NFTItem[]" },
-    { name: "makerMonAmount", type: "uint256" },
-    { name: "takerMonAmount", type: "uint256" },
+    { name: "makerEthAmount", type: "uint256" },
+    { name: "takerEthAmount", type: "uint256" },
     { name: "feeBps", type: "uint256" },
     { name: "flatFee", type: "uint256" },
     { name: "nonce", type: "uint256" },
     { name: "expiry", type: "uint256" },
   ],
   NFTItem: [
+    { name: "standard", type: "uint8" },
     { name: "contractAddress", type: "address" },
     { name: "tokenId", type: "uint256" },
+    { name: "amount", type: "uint256" },
   ],
 } as const;
 
 export interface NFTItem {
+  standard: 0 | 1;
   contractAddress: Address;
   tokenId: bigint;
+  amount: bigint;
 }
 
 export interface TradeOrder {
@@ -43,8 +47,8 @@ export interface TradeOrder {
   taker: Address;
   makerNFTs: NFTItem[];
   takerNFTs: NFTItem[];
-  makerMonAmount: bigint;
-  takerMonAmount: bigint;
+  makerEthAmount: bigint;
+  takerEthAmount: bigint;
   feeBps: bigint;
   flatFee: bigint;
   nonce: bigint;
@@ -55,7 +59,7 @@ export const ZERO_ADDRESS =
   "0x0000000000000000000000000000000000000000" as Address;
 
 export function getOrderDomain(
-  chainId: number = MONAD_CHAIN_ID,
+  chainId: number = ETH_MAINNET_CHAIN_ID,
   verifyingContract: Address = SETTLEMENT_CONTRACT_ADDRESS
 ): TypedDataDomain {
   return {

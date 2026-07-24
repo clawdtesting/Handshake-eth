@@ -33,8 +33,8 @@ export interface TradeOffer {
   makerAddress: string;
   takerAddress: string | null;
   status: OfferStatus;
-  makerMonAmount: string; // wei, as string
-  takerMonAmount: string; // wei, as string
+  makerEthAmount: string; // wei, as string
+  takerEthAmount: string; // wei, as string
   feeBps: number; // protocol fee (bps) baked into the signed order
   flatFee: string; // flat swap fee (wei, as string) baked into the order
   nonce: string;
@@ -102,8 +102,8 @@ export interface DealRoomDraft {
   takerAddress: string;
   makerNFTs: RevisionNFT[];
   takerNFTs: RevisionNFT[];
-  makerMonAmount: string; // wei, as string
-  takerMonAmount: string; // wei, as string
+  makerEthAmount: string; // wei, as string
+  takerEthAmount: string; // wei, as string
   feeBps: number;
   flatFee: string; // wei, as string
   offerExpiry: number; // unix seconds — expiry of the eventual signed order

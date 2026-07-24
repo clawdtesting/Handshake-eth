@@ -8,7 +8,7 @@
  * exits non-zero if any check fails, so it can gate a deploy pipeline.
  *
  * Usage:
- *   export MONAD_RPC_URL=https://rpc.monad.xyz
+ *   export ETH_MAINNET_RPC_URL=https://rpc.ethereum.xyz
  *   export HANDSHAKE_ADDRESS=0x...          # the freshly deployed contract
  *   # optional: override the seed set (comma-separated addresses)
  *   # export INITIAL_COLLECTIONS=0xabc...,0xdef...
@@ -18,7 +18,7 @@
 
 import { createPublicClient, http, getAddress, isAddress } from "viem";
 
-const RPC = process.env.MONAD_RPC_URL ?? "https://rpc.monad.xyz";
+const RPC = process.env.ETH_MAINNET_RPC_URL ?? "https://rpc.ethereum.xyz";
 const HANDSHAKE = process.env.HANDSHAKE_ADDRESS;
 
 if (!HANDSHAKE || !isAddress(HANDSHAKE)) {

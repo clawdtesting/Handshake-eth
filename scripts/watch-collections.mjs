@@ -28,8 +28,8 @@
  * incremental and never miss (or re-alert) a proposal.
  *
  * Usage:
- *   export MONAD_RPC_URL=https://rpc.monad.xyz
- *   export HANDSHAKE_ADDRESS=0x017605384782b0841fde1f1e8539ebedd2c43420
+ *   export ETH_MAINNET_RPC_URL=https://rpc.ethereum.xyz
+ *   export HANDSHAKE_ADDRESS=
  *   # optional:
  *   #   export ALERT_WEBHOOK_URL=https://hooks.slack.com/services/...
  *   #   export KNOWN_COLLECTIONS=0xabc...,0xdef...   # expected set (defaults to seeds)
@@ -50,9 +50,9 @@ import { dirname } from "node:path";
 // Config
 // --------------------------------------------------------------------------
 
-const RPC = process.env.MONAD_RPC_URL ?? "https://rpc.monad.xyz";
+const RPC = process.env.ETH_MAINNET_RPC_URL ?? "https://rpc.ethereum.xyz";
 const HANDSHAKE = process.env.HANDSHAKE_ADDRESS;
-const EXPLORER = process.env.NEXT_PUBLIC_MONAD_EXPLORER_URL ?? "https://monadscan.com";
+const EXPLORER = process.env.NEXT_PUBLIC_ETH_MAINNET_EXPLORER_URL ?? "https://etherscan.io";
 const WEBHOOK = process.env.ALERT_WEBHOOK_URL ?? "";
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS ?? 15_000);
 const LOOKBACK_BLOCKS = BigInt(process.env.LOOKBACK_BLOCKS ?? 500_000);

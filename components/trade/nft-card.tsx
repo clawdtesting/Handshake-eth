@@ -112,7 +112,7 @@ function NFTThumbnail({
   mediaClassName?: string;
 }) {
   // When the indexer listed this token without media (common for newly
-  // indexed Monad collections), resolve the image on-chain as a fallback.
+  // indexed Ethereum collections), resolve the image on-chain as a fallback.
   const needsFallback = !collectionBid && !hasMedia(nft);
   const fallback = useNftMediaFallback(nft, needsFallback);
   const resolved: NFTAsset = needsFallback
@@ -203,8 +203,8 @@ export function NFTCard({
       disabled={!onClick}
       className={cn(
         "group relative overflow-hidden rounded-lg border bg-card text-left transition-all",
-        onClick && "cursor-pointer hover:border-monad-purple/60",
-        selected && "border-monad-purple ring-1 ring-monad-purple",
+        onClick && "cursor-pointer hover:border-ethereum-purple/60",
+        selected && "border-ethereum-purple ring-1 ring-ethereum-purple",
         !onClick && "cursor-default"
       )}
     >
@@ -242,7 +242,7 @@ export function NFTCard({
         </div>
       </div>
       {selected && (
-        <div className="absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-monad-purple text-xs font-bold text-monad-black">
+        <div className="absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ethereum-purple text-xs font-bold text-ethereum-black">
           ✓
         </div>
       )}
@@ -273,8 +273,8 @@ export function NFTListItem({
       disabled={!onClick}
       className={cn(
         "group flex w-full items-center gap-3 rounded-lg border bg-card p-2 text-left transition-all",
-        onClick && "cursor-pointer hover:border-monad-purple/60",
-        selected && "border-monad-purple ring-1 ring-monad-purple",
+        onClick && "cursor-pointer hover:border-ethereum-purple/60",
+        selected && "border-ethereum-purple ring-1 ring-ethereum-purple",
         !onClick && "cursor-default"
       )}
     >
@@ -285,7 +285,7 @@ export function NFTListItem({
           className="h-14 w-14 rounded-md sm:h-16 sm:w-16"
         />
         {selected && (
-          <div className="absolute -left-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-monad-purple text-xs font-bold text-monad-black">
+          <div className="absolute -left-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-ethereum-purple text-xs font-bold text-ethereum-black">
             ✓
           </div>
         )}

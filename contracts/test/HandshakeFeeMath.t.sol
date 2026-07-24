@@ -46,22 +46,22 @@ contract HandshakeFeeMath is Test {
         colB.setApprovalForAll(address(hs), true);
     }
 
-    function _order(uint256 makerMon, uint256 takerMon, uint256 feeBps, uint256 flatFee)
+    function _order(uint256 makerEth, uint256 takerEth, uint256 feeBps, uint256 flatFee)
         internal
         view
         returns (Handshake.TradeOrder memory order)
     {
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](1);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(colA), tokenId: TOKEN_A});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colA), tokenId: TOKEN_A, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(colB), tokenId: TOKEN_B});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colB), tokenId: TOKEN_B, amount: 1});
         order = Handshake.TradeOrder({
             maker: maker,
             taker: takerEOA,
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: makerMon,
-            takerMonAmount: takerMon,
+            makerEthAmount: makerEth,
+            takerEthAmount: takerEth,
             feeBps: feeBps,
             flatFee: flatFee,
             nonce: 1,
@@ -80,44 +80,44 @@ contract HandshakeFeeMath is Test {
         assertEq(address(hs).balance, tracked, "solvency: balance != Sigma escrow + Sigma fees");
     }
 
-    /// @dev Per-MON-leg fee (order has a maker MON leg, so no flat fee applies).
-    function testFuzz_FeeMath_BpsLegs(uint256 makerMon, uint256 takerMon, uint256 feeBps) public {
+    /// @dev Per-ETH-leg fee (order has a maker ETH leg, so no flat fee applies).
+    function testFuzz_FeeMath_BpsLegs(uint256 makerEth, uint256 takerEth, uint256 feeBps) public {
         feeBps = bound(feeBps, 0, hs.MAX_FEE_BPS());
-        makerMon = bound(makerMon, 1, 1e24); // > 0 so the flat-fee branch is off
-        takerMon = bound(takerMon, 0, 1e24);
+        makerEth = bound(makerEth, 1, 1e24); // > 0 so the flat-fee branch is off
+        takerEth = bound(takerEth, 0, 1e24);
 
-        uint256 makerLegFee = (makerMon * feeBps) / BPS_DENOMINATOR;
-        uint256 takerLegFee = (takerMon * feeBps) / BPS_DENOMINATOR;
+        uint256 makerLegFee = (makerEth * feeBps) / BPS_DENOMINATOR;
+        uint256 takerLegFee = (takerEth * feeBps) / BPS_DENOMINATOR;
         uint256 expectedFee = makerLegFee + takerLegFee;
 
         // Maker funds its leg + maker-side fee from escrow.
-        uint256 makerCost = makerMon + makerLegFee;
+        uint256 makerCost = makerEth + makerLegFee;
         vm.deal(maker, makerCost);
         vm.prank(maker);
         hs.deposit{value: makerCost}();
 
         // Taker funds its leg + taker-side fee as msg.value.
-        uint256 msgValue = takerMon + takerLegFee;
+        uint256 msgValue = takerEth + takerLegFee;
         vm.deal(takerEOA, msgValue);
 
-        Handshake.TradeOrder memory order = _order(makerMon, takerMon, feeBps, 0);
+        Handshake.TradeOrder memory order = _order(makerEth, takerEth, feeBps, 0);
         bytes memory sig = _sign(order);
 
         vm.prank(takerEOA);
         hs.fulfillTrade{value: msgValue}(order, sig);
 
         assertEq(hs.pendingFees(feeRecipient), expectedFee, "fee accrual exact for any bps");
-        assertEq(maker.balance, takerMon, "maker received taker MON leg");
-        assertEq(takerEOA.balance, makerMon, "taker received maker MON leg");
+        assertEq(maker.balance, takerEth, "maker received taker ETH leg");
+        assertEq(takerEOA.balance, makerEth, "taker received maker ETH leg");
         assertEq(hs.escrowBalance(maker), 0, "maker escrow fully consumed");
         _assertSolvent();
     }
 
-    /// @dev Flat swap fee applies only when NO MON moves on either side.
+    /// @dev Flat swap fee applies only when NO ETH moves on either side.
     function testFuzz_FeeMath_FlatFee(uint256 flatFee) public {
         flatFee = bound(flatFee, 0, hs.MAX_FLAT_SWAP_FEE());
 
-        // Taker funds exactly the flat fee (no MON legs).
+        // Taker funds exactly the flat fee (no ETH legs).
         vm.deal(takerEOA, flatFee);
 
         Handshake.TradeOrder memory order = _order(0, 0, 100, flatFee);

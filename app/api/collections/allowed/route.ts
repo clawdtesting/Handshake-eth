@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { Address } from "viem";
 import { publicClient } from "@/lib/chains/client";
 import { settlementAbi } from "@/lib/contracts/settlement";
-import { SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
  * call instead of dozens that rate-limit and fail.
  */
 
-// Canonical Multicall3 (same deterministic address on Monad and every EVM).
+// Canonical Multicall3 (same deterministic address on Ethereum and every EVM).
 const MULTICALL3_ADDRESS =
   "0xcA11bde05977b3631167028862bE2a173976CA11" as const;
 

@@ -376,8 +376,8 @@ export function useRoomMutations(roomId: string | null) {
         taker: string;
         makerNFTs: { contractAddress: string; tokenId: string }[];
         takerNFTs: { contractAddress: string; tokenId: string }[];
-        makerMonAmount: string;
-        takerMonAmount: string;
+        makerEthAmount: string;
+        takerEthAmount: string;
         feeBps: string;
         flatFee: string;
         nonce: string;

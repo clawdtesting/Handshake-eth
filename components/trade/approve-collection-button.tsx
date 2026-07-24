@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MONAD_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 import { erc721Abi } from "@/lib/contracts/settlement";
 import { runWrite } from "@/lib/chains/tx";
 import { COLLECTION_APPROVALS_KEY } from "@/hooks/use-approvals";
@@ -40,8 +40,8 @@ export function ApproveCollectionButton({
       toast.error("Connect your wallet first");
       return;
     }
-    if (chainId !== MONAD_CHAIN_ID) {
-      toast.error("Switch to the Monad network first");
+    if (chainId !== ETH_MAINNET_CHAIN_ID) {
+      toast.error("Switch to the Ethereum network first");
       return;
     }
     if (
@@ -59,7 +59,7 @@ export function ApproveCollectionButton({
         writeContractAsync,
         account: address,
         walletChainId: chainId,
-        expectedChainId: MONAD_CHAIN_ID,
+        expectedChainId: ETH_MAINNET_CHAIN_ID,
         label: "Approve collection",
         address: collectionAddress as Address,
         abi: erc721Abi,

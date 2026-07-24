@@ -8,7 +8,7 @@ import {MockERC721} from "./mocks/MockERC721.sol";
 /// @notice Fuzzed handler that interleaves the new allowlist mutations
 ///         (propose / remove / time warps) with escrow deposits and real
 ///         settlements, so the invariant below can prove the allowlist did not
-///         perturb native-MON accounting.
+///         perturb native-ETH accounting.
 contract SolvencyHandler is Test {
     Handshake public hs;
     MockERC721 public colA;
@@ -74,27 +74,27 @@ contract SolvencyHandler is Test {
     }
 
     /// @dev Attempt a settlement of colA(tokenId) for colB(tokenId) with an
-    ///      optional maker MON leg. Wrapped so an expected revert (not
+    ///      optional maker ETH leg. Wrapped so an expected revert (not
     ///      allowlisted, pending, nonce reuse, insufficient escrow) simply does
     ///      nothing — the invariant must still hold after the rolled-back call.
-    function fill(uint256 tokenSeed, uint256 makerMon, uint256 nonce) external {
+    function fill(uint256 tokenSeed, uint256 makerEth, uint256 nonce) external {
         uint256 tokenId = bound(tokenSeed, 0, POOL - 1);
-        makerMon = bound(makerMon, 0, 10 ether);
-        uint256 makerCost = makerMon + (makerMon * 100) / 10_000;
-        if (hs.escrowBalance(maker) < makerCost) makerMon = 0;
+        makerEth = bound(makerEth, 0, 10 ether);
+        uint256 makerCost = makerEth + (makerEth * 100) / 10_000;
+        if (hs.escrowBalance(maker) < makerCost) makerEth = 0;
 
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](1);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(colA), tokenId: tokenId});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colA), tokenId: tokenId, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(colB), tokenId: tokenId});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colB), tokenId: tokenId, amount: 1});
 
         Handshake.TradeOrder memory order = Handshake.TradeOrder({
             maker: maker,
             taker: address(0),
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: makerMon,
-            takerMonAmount: 0,
+            makerEthAmount: makerEth,
+            takerEthAmount: 0,
             feeBps: 100,
             flatFee: 0,
             nonce: nonce,

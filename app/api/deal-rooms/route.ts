@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { getOfferById } from "@/lib/db/offers";
 import {
@@ -81,9 +81,9 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
-  if (input.chainId !== MONAD_CHAIN_ID) {
+  if (input.chainId !== ETH_MAINNET_CHAIN_ID) {
     return NextResponse.json(
-      { error: `Wrong chain. Expected ${MONAD_CHAIN_ID}` },
+      { error: `Wrong chain. Expected ${ETH_MAINNET_CHAIN_ID}` },
       { status: 400 }
     );
   }

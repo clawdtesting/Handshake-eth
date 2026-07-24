@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {Handshake} from "../src/Handshake.sol";
 
 /// Usage:
-///   export MONAD_RPC_URL=... PRIVATE_KEY_DEPLOYER=0x... \
+///   export ETH_MAINNET_RPC_URL=... PRIVATE_KEY_DEPLOYER=0x... \
 ///          FEE_RECIPIENT_ADDRESS=0x... CONTRACT_OWNER=0x...
 ///   # Optional launch allowlist (comma-separated, seeded with no timelock):
 ///   export INITIAL_COLLECTIONS=0xAbc...,0xDef...

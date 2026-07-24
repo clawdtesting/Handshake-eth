@@ -20,8 +20,8 @@ function draft(overrides: Partial<DealRoomDraft> = {}): DealRoomDraft {
       { contractAddress: C1, tokenId: "42" },
     ],
     takerNFTs: [],
-    makerMonAmount: "0",
-    takerMonAmount: "4000000000000000000000",
+    makerEthAmount: "0",
+    takerEthAmount: "4000000000000000000000",
     feeBps: 100,
     flatFee: "0",
     offerExpiry: 2_000_000_000,
@@ -75,7 +75,7 @@ describe("termsHash", () => {
 
   it("changes when any economic field changes", () => {
     const base = termsHash(draft());
-    expect(termsHash(draft({ takerMonAmount: "4000000000000000000001" }))).not.toBe(base);
+    expect(termsHash(draft({ takerEthAmount: "4000000000000000000001" }))).not.toBe(base);
     expect(termsHash(draft({ feeBps: 99 }))).not.toBe(base);
     expect(termsHash(draft({ flatFee: "1" }))).not.toBe(base);
     expect(termsHash(draft({ offerExpiry: 2_000_000_001 }))).not.toBe(base);
@@ -90,14 +90,14 @@ describe("termsHash", () => {
     const a = draft({
       makerNFTs: [{ contractAddress: C1, tokenId: "1" }],
       takerNFTs: [],
-      takerMonAmount: "1",
-      makerMonAmount: "1",
+      takerEthAmount: "1",
+      makerEthAmount: "1",
     });
     const b = draft({
       makerNFTs: [],
       takerNFTs: [{ contractAddress: C1, tokenId: "1" }],
-      takerMonAmount: "1",
-      makerMonAmount: "1",
+      takerEthAmount: "1",
+      makerEthAmount: "1",
     });
     expect(termsHash(a)).not.toBe(termsHash(b));
   });

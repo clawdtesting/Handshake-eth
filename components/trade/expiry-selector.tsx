@@ -100,7 +100,7 @@ export function ExpirySelector({
       </div>
 
       {showCustomExpiry && (
-        <div className="mt-3 grid gap-2 rounded-lg border border-monad-purple/30 bg-monad-purple/5 p-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
+        <div className="mt-3 grid gap-2 rounded-lg border border-ethereum-purple/30 bg-ethereum-purple/5 p-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
           <Input
             placeholder="Custom time"
             inputMode="decimal"

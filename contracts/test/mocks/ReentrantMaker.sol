@@ -10,7 +10,7 @@ import {Handshake} from "../../src/Handshake.sol";
 /// @notice A contract MAKER (authorized via EIP-1271) that attempts to re-enter
 ///         Handshake from the ERC-721 receive hook on the SECOND settlement leg.
 ///         The taker's NFTs are safeTransferFrom'd to the maker AFTER the maker's
-///         NFTs already moved and AFTER all state effects, but before the MON
+///         NFTs already moved and AFTER all state effects, but before the ETH
 ///         payouts. onERC721Received fires there; this mock re-enters
 ///         withdraw/withdrawFees so a test can prove the ReentrancyGuard holds at
 ///         the maker-side window too (the existing suite only covered taker-side,

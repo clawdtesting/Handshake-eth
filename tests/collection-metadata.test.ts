@@ -16,7 +16,7 @@ vi.mock("@/lib/nft/safe-fetch", () => ({
 
 import { getCollectionMetadata } from "@/lib/nft/collection-metadata";
 
-const CHAIN = 143;
+const CHAIN = 1;
 const TENK = "0x818030837e8350ba63e64d7dc01a547fa73c8279";
 const EREBUS = "0x2a0001f3d4c98881376f8d36b3c61f163d84a095";
 

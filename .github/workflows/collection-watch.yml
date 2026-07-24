@@ -7,7 +7,7 @@ name: collection-watch
 #
 # Dormant until you opt in: set repo variable WATCH_COLLECTIONS_ENABLED=true and
 # the secrets below (Settings -> Secrets and variables -> Actions).
-#   secrets:  MONAD_RPC_URL, HANDSHAKE_ADDRESS, ALERT_WEBHOOK_URL (optional)
+#   secrets:  ETH_MAINNET_RPC_URL, HANDSHAKE_ADDRESS, ALERT_WEBHOOK_URL (optional)
 #   vars:     WATCH_COLLECTIONS_ENABLED=true, KNOWN_COLLECTIONS (optional)
 on:
   workflow_dispatch:
@@ -53,7 +53,7 @@ jobs:
 
       - name: Scan for CollectionProposed
         env:
-          MONAD_RPC_URL: ${{ secrets.MONAD_RPC_URL }}
+          ETH_MAINNET_RPC_URL: ${{ secrets.ETH_MAINNET_RPC_URL }}
           HANDSHAKE_ADDRESS: ${{ secrets.HANDSHAKE_ADDRESS }}
           ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
           KNOWN_COLLECTIONS: ${{ vars.KNOWN_COLLECTIONS }}

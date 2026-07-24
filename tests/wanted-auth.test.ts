@@ -16,7 +16,7 @@ describe("wanted auth", () => {
     const timestamp = Date.now();
     const message = buildCreateWantedMessage({
       walletAddress: account.address,
-      lookingFor: "Monad Punks",
+      lookingFor: "Ethereum Punks",
       timestamp,
     });
     const signature = await account.signMessage({ message });
@@ -46,7 +46,7 @@ describe("wanted auth", () => {
     const timestamp = Date.now();
     const message = buildCreateWantedMessage({
       walletAddress: account.address,
-      lookingFor: "Monad Punks",
+      lookingFor: "Ethereum Punks",
       timestamp,
     });
     const signature = await account.signMessage({ message });

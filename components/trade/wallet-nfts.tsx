@@ -125,7 +125,7 @@ export function WalletNFTs({ owner }: { owner: string }) {
     return (
       <EmptyState
         title="No NFTs found"
-        body="We couldn't find ERC-721 NFTs in this wallet on Monad."
+        body="We couldn't find ERC-721 NFTs in this wallet on Ethereum."
       />
     );
   }
@@ -145,7 +145,7 @@ export function WalletNFTs({ owner }: { owner: string }) {
               type="checkbox"
               checked={hideUnapproved}
               onChange={(e) => setHideUnapproved(e.target.checked)}
-              className="accent-monad-purple"
+              className="accent-ethereum-purple"
             />
             Hide unapproved
           </label>
@@ -256,10 +256,10 @@ export function WalletNFTs({ owner }: { owner: string }) {
       )}
 
       {selectedNft && (
-        <div className="rounded-xl border border-monad-purple/30 bg-card p-4">
+        <div className="rounded-xl border border-ethereum-purple/30 bg-card p-4">
           <div className="mb-3 flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-monad-purple">
+              <p className="text-xs font-medium uppercase tracking-wide text-ethereum-purple">
                 NFT details
               </p>
               <h3 className="text-lg font-semibold">
@@ -324,7 +324,7 @@ function Detail({
 }) {
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-monad-purple">
+      <p className="text-xs font-medium uppercase tracking-wide text-ethereum-purple">
         {label}
       </p>
       <p className={cn("mt-1 break-all text-foreground", mono && "font-mono text-xs")}>
@@ -352,15 +352,15 @@ function FilterChip({
       className={cn(
         "flex max-w-[14rem] items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
         active
-          ? "border-monad-purple bg-monad-purple/10 text-monad-purple"
-          : "border-border text-muted-foreground hover:border-monad-purple/50 hover:text-foreground"
+          ? "border-ethereum-purple bg-ethereum-purple/10 text-ethereum-purple"
+          : "border-border text-muted-foreground hover:border-ethereum-purple/50 hover:text-foreground"
       )}
     >
       <span className="truncate">{label}</span>
       <span
         className={cn(
           "shrink-0 rounded-full px-1.5 text-xs",
-          active ? "bg-monad-purple/20" : "bg-muted"
+          active ? "bg-ethereum-purple/20" : "bg-muted"
         )}
       >
         {count}
@@ -386,7 +386,7 @@ function LayoutToggle({
           className={cn(
             "rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors",
             layout === option
-              ? "bg-monad-purple text-monad-black"
+              ? "bg-ethereum-purple text-ethereum-black"
               : "text-muted-foreground hover:text-foreground"
           )}
           aria-pressed={layout === option}

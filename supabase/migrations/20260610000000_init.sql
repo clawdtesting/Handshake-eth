@@ -1,4 +1,4 @@
--- Monad Market initial schema
+-- Ethereum Market initial schema
 
 create extension if not exists "pgcrypto";
 

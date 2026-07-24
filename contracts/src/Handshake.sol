@@ -7,19 +7,22 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 /// @title Handshake
-/// @notice Atomic peer-to-peer settlement of off-chain signed NFT/MON trade
-///         orders on Monad. Orders are EIP-712 signed by the maker, stored
+/// @notice Atomic peer-to-peer settlement of off-chain signed NFT/ETH trade
+///         orders on Ethereum. Orders are EIP-712 signed by the maker, stored
 ///         off-chain (zero gas to create), and settled on-chain by the taker.
 ///
-///         Supported shapes: NFT↔NFT, NFT↔MON, MON↔NFT, NFT+MON↔NFT(+MON).
+///         Supported shapes: NFT↔NFT, NFT↔ETH, ETH↔NFT, NFT+ETH↔NFT(+ETH).
 ///
-///         Maker-side MON is funded from the maker's self-managed escrow
+///         Maker-side ETH is funded from the maker's self-managed escrow
 ///         balance (deposit/withdraw — the contract owner can never move
-///         user funds). Taker-side MON is provided as msg.value.
+///         user funds). Taker-side ETH is provided as msg.value.
 ///
-///         MON proceeds are auto-withdrawn: settlement sends them directly with a
+///         ETH proceeds are auto-withdrawn: settlement sends them directly with a
 ///         bounded gas stipend so no second transaction is needed. If a recipient
 ///         can't receive within that budget (reverts / gas-heavy / non-payable),
 ///         the amount safely falls back to an escrow credit it can pull later, so
@@ -31,8 +34,10 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     // ---------------------------------------------------------------------
 
     struct NFTItem {
+        uint8 standard;
         address contractAddress;
         uint256 tokenId;
+        uint256 amount;
     }
 
     struct TradeOrder {
@@ -40,9 +45,9 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
         address taker; // address(0) => open to anyone
         NFTItem[] makerNFTs;
         NFTItem[] takerNFTs;
-        uint256 makerMonAmount;
-        uint256 takerMonAmount;
-        uint256 feeBps; // fee on each MON leg, agreed at signing time
+        uint256 makerEthAmount;
+        uint256 takerEthAmount;
+        uint256 feeBps; // fee on each ETH leg, agreed at signing time
         uint256 flatFee; // flat fee (wei) for NFT-only swaps, agreed at signing
         uint256 nonce;
         uint256 expiry; // unix timestamp
@@ -53,10 +58,10 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     // ---------------------------------------------------------------------
 
     bytes32 public constant NFT_ITEM_TYPEHASH =
-        keccak256("NFTItem(address contractAddress,uint256 tokenId)");
+        keccak256("NFTItem(uint8 standard,address contractAddress,uint256 tokenId,uint256 amount)");
 
     bytes32 public constant TRADE_ORDER_TYPEHASH = keccak256(
-        "TradeOrder(address maker,address taker,NFTItem[] makerNFTs,NFTItem[] takerNFTs,uint256 makerMonAmount,uint256 takerMonAmount,uint256 feeBps,uint256 flatFee,uint256 nonce,uint256 expiry)NFTItem(address contractAddress,uint256 tokenId)"
+        "TradeOrder(address maker,address taker,NFTItem[] makerNFTs,NFTItem[] takerNFTs,uint256 makerEthAmount,uint256 takerEthAmount,uint256 feeBps,uint256 flatFee,uint256 nonce,uint256 expiry)NFTItem(uint8 standard,address contractAddress,uint256 tokenId,uint256 amount)"
     );
 
     /// @notice EIP-712 type for a maker-authorized nonce cancellation, so an
@@ -70,7 +75,7 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     uint256 public constant BPS_DENOMINATOR = 10_000;
     uint256 public constant MAX_ITEMS_PER_SIDE = 20;
 
-    /// @notice Gas forwarded to an auto-withdraw MON payout. Bounded so a hostile
+    /// @notice Gas forwarded to an auto-withdraw ETH payout. Bounded so a hostile
     ///         recipient can't burn gas / OOG the settlement tail; if the payout
     ///         needs more than this (or reverts), it safely falls back to an
     ///         escrow credit the recipient can pull later. Generous enough for
@@ -91,19 +96,20 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     // ---------------------------------------------------------------------
 
     address public feeRecipient;
-    uint256 public feeBps; // fee on each MON leg, default 100 = 1%
+    uint256 public feeBps; // fee on each ETH leg, default 100 = 1%
     uint256 public flatSwapFee; // flat fee (in wei) charged on NFT-only swaps
 
     /// @notice maker => nonce => consumed (filled or cancelled)
     mapping(address => mapping(uint256 => bool)) public nonceUsed;
 
-    /// @notice Self-managed MON escrow used to fund maker-side MON legs.
+    /// @notice Self-managed ETH escrow used to fund maker-side ETH legs.
     mapping(address => uint256) public escrowBalance;
 
     /// @notice Pull-payment ledger of protocol fees owed to fee recipients.
     ///         Accrued during settlement; claimed via withdrawFees(). Pull
     ///         payments stop a reverting fee recipient from bricking trades.
     mapping(address => uint256) public pendingFees;
+    mapping(address => uint256) public pendingRoyalties;
 
     /// @notice Collection allowlist: contract address => unix time at which it
     ///         becomes tradable. 0 means the collection is not allowed. A trade
@@ -122,8 +128,8 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
         bytes32 indexed orderHash,
         address indexed maker,
         address indexed taker,
-        uint256 makerMonAmount,
-        uint256 takerMonAmount,
+        uint256 makerEthAmount,
+        uint256 takerEthAmount,
         uint256 protocolFee
     );
     event TradeCancelled(address indexed maker, uint256 indexed nonce);
@@ -133,7 +139,8 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     event EscrowDeposited(address indexed account, uint256 amount);
     event EscrowWithdrawn(address indexed account, uint256 amount);
     event FeesWithdrawn(address indexed recipient, uint256 amount);
-    /// @notice Emitted when an auto-withdraw MON payout could not be delivered
+    event RoyaltiesWithdrawn(address indexed recipient, address indexed to, uint256 amount);
+    /// @notice Emitted when an auto-withdraw ETH payout could not be delivered
     ///         directly and was credited to the recipient's escrow instead.
     event ProceedsCredited(address indexed to, uint256 amount);
     /// @notice Emitted when a collection is proposed for (or seeded onto) the
@@ -174,6 +181,10 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     ///         live, which would otherwise reset a working collection's timer
     ///         and disable it for ADD_DELAY.
     error AlreadyAllowed(address collection);
+    error InvalidNFTItem(address collection, uint256 tokenId);
+    error UnsupportedNFTStandard(address collection, uint8 standard);
+    error InsufficientTokenBalance(address nft, uint256 tokenId, address owner, uint256 required);
+    error RoyaltyExceedsProceeds();
 
     // ---------------------------------------------------------------------
     // Constructor
@@ -224,9 +235,9 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     }
 
     /// @notice Withdraw your own escrow to an alternate payable address. Lets a
-    ///         depositor whose own address cannot receive native MON (e.g. a
+    ///         depositor whose own address cannot receive native ETH (e.g. a
     ///         contract with no payable fallback) still recover its funds. The
-    ///         ledger stays keyed to msg.sender, so only you can move your MON.
+    ///         ledger stays keyed to msg.sender, so only you can move your ETH.
     function withdrawTo(address to, uint256 amount) external nonReentrant {
         if (to == address(0)) revert ZeroAddress();
         _withdraw(to, amount);
@@ -239,11 +250,25 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     }
 
     /// @notice Claim your accrued fees to an alternate payable address, in case
-    ///         the fee-recipient address itself cannot receive native MON. Still
+    ///         the fee-recipient address itself cannot receive native ETH. Still
     ///         keyed to msg.sender's pending balance — nobody else's fees move.
     function withdrawFeesTo(address to) external nonReentrant {
         if (to == address(0)) revert ZeroAddress();
         _withdrawFees(to);
+    }
+
+    function withdrawRoyalties() external nonReentrant { _withdrawRoyalties(msg.sender); }
+    function withdrawRoyaltiesTo(address to) external nonReentrant {
+        if (to == address(0)) revert ZeroAddress();
+        _withdrawRoyalties(to);
+    }
+
+    function _withdrawRoyalties(address to) private {
+        uint256 amount = pendingRoyalties[msg.sender];
+        if (amount == 0) revert ZeroAmount();
+        pendingRoyalties[msg.sender] = 0;
+        emit RoyaltiesWithdrawn(msg.sender, to, amount);
+        _sendNative(to, amount);
     }
 
     /// @dev Debits the caller's escrow and pays `to`. Reachable only through the
@@ -272,7 +297,7 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     // ---------------------------------------------------------------------
 
     /// @notice Settle a maker-signed order. Caller is the taker and must
-    ///         send `takerMonAmount` plus the taker-side protocol fee
+    ///         send `takerEthAmount` plus the taker-side protocol fee
     ///         (and the flat swap fee for NFT-only swaps) as msg.value.
     /// @dev Slither triage:
     ///   - reentrancy-no-eth (benign / false positive): the function is
@@ -286,7 +311,7 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     ///     own balance, never a read-modify-write of a value a callback observed
     ///     stale, and it cannot be withdrawn until the guard is released (by
     ///     which point it is finalized). No callback can act on partial state,
-    ///     so the solvency invariant (balance == Σescrow + ΣpendingFees) holds.
+    ///     so the solvency invariant (balance == Σescrow + ΣpendingFees + ΣpendingRoyalties) holds. Every incoming ETH wei is either paid out or retained in exactly one of those pull-payment ledgers; seller royalties reduce the matching payout by the identical credited amount.
     ///   - timestamp (accepted by design): `block.timestamp >= order.expiry`
     ///     is an intentional settlement deadline; miner drift of a few seconds
     ///     cannot change trade economics, only whether a near-expiry order fills.
@@ -301,10 +326,10 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
         whenNotPaused
     {
         // ----- Checks -----
-        if (order.makerNFTs.length == 0 && order.makerMonAmount == 0) revert EmptyOrder();
-        if (order.takerNFTs.length == 0 && order.takerMonAmount == 0) revert EmptyOrder();
+        if (order.makerNFTs.length == 0 && order.makerEthAmount == 0) revert EmptyOrder();
+        if (order.takerNFTs.length == 0 && order.takerEthAmount == 0) revert EmptyOrder();
         // This is an NFT marketplace: at least one side must move an NFT. Reject
-        // MON-only (native-for-native) orders so they can't settle here and
+        // ETH-only (native-for-native) orders so they can't settle here and
         // pollute trade/volume accounting.
         if (order.makerNFTs.length == 0 && order.takerNFTs.length == 0) revert NoNFTInTrade();
         if (order.makerNFTs.length > MAX_ITEMS_PER_SIDE || order.takerNFTs.length > MAX_ITEMS_PER_SIDE) {
@@ -333,21 +358,28 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
             revert InvalidSignature();
         }
 
-        // Fees: order.feeBps on each MON leg; flat fee when no MON moves at all.
-        uint256 makerLegFee = (order.makerMonAmount * order.feeBps) / BPS_DENOMINATOR;
-        uint256 takerLegFee = (order.takerMonAmount * order.feeBps) / BPS_DENOMINATOR;
-        uint256 flatFee = (order.makerMonAmount == 0 && order.takerMonAmount == 0) ? order.flatFee : 0;
+        // Fees: order.feeBps on each ETH leg; flat fee when no ETH moves at all.
+        uint256 makerLegFee = (order.makerEthAmount * order.feeBps) / BPS_DENOMINATOR;
+        uint256 takerLegFee = (order.takerEthAmount * order.feeBps) / BPS_DENOMINATOR;
+        uint256 flatFee = (order.makerEthAmount == 0 && order.takerEthAmount == 0) ? order.flatFee : 0;
         uint256 totalFee = makerLegFee + takerLegFee + flatFee;
 
-        // Taker funds their MON leg + taker-side fee + flat fee in msg.value.
-        if (msg.value != order.takerMonAmount + takerLegFee + flatFee) revert IncorrectPayment();
+        // Taker funds their ETH leg + taker-side fee + flat fee in msg.value.
+        if (msg.value != order.takerEthAmount + takerLegFee + flatFee) revert IncorrectPayment();
 
-        // Maker funds their MON leg + maker-side fee from escrow.
-        uint256 makerCost = order.makerMonAmount + makerLegFee;
+        // Maker funds their ETH leg + maker-side fee from escrow.
+        uint256 makerCost = order.makerEthAmount + makerLegFee;
         if (escrowBalance[order.maker] < makerCost) revert InsufficientEscrow();
 
         _verifyNFTs(order.makerNFTs, order.maker);
         _verifyNFTs(order.takerNFTs, msg.sender);
+        (address[] memory makerRoyaltyRecipients, uint256[] memory makerRoyalties, uint256 makerRoyaltyTotal) =
+            _quoteRoyalties(order.makerNFTs, order.takerEthAmount);
+        (address[] memory takerRoyaltyRecipients, uint256[] memory takerRoyalties, uint256 takerRoyaltyTotal) =
+            _quoteRoyalties(order.takerNFTs, order.makerEthAmount);
+        if (makerRoyaltyTotal > order.takerEthAmount || takerRoyaltyTotal > order.makerEthAmount) {
+            revert RoyaltyExceedsProceeds();
+        }
 
         // ----- Effects -----
         nonceUsed[order.maker][order.nonce] = true;
@@ -355,24 +387,30 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
         // Fees accrue to the recipient's pull-payment balance instead of being
         // pushed here, so a reverting fee recipient can never brick a trade.
         if (totalFee > 0) pendingFees[feeRecipient] += totalFee;
+        for (uint256 i; i < makerRoyaltyRecipients.length; ++i) {
+            if (makerRoyalties[i] != 0) pendingRoyalties[makerRoyaltyRecipients[i]] += makerRoyalties[i];
+        }
+        for (uint256 i; i < takerRoyaltyRecipients.length; ++i) {
+            if (takerRoyalties[i] != 0) pendingRoyalties[takerRoyaltyRecipients[i]] += takerRoyalties[i];
+        }
 
         // ----- Interactions -----
         _transferNFTs(order.makerNFTs, order.maker, msg.sender);
         _transferNFTs(order.takerNFTs, msg.sender, order.maker);
 
-        // Auto-withdraw the MON proceeds: send them directly with a bounded gas
+        // Auto-withdraw the ETH proceeds: send them directly with a bounded gas
         // stipend so recipients don't need a second transaction, while a hostile
         // recipient still can't grief/OOG the trade — a failed or gas-heavy
         // payout falls back to an escrow credit instead of reverting settlement.
-        _payout(order.maker, order.takerMonAmount);
-        _payout(msg.sender, order.makerMonAmount);
+        _payout(order.maker, order.takerEthAmount - makerRoyaltyTotal);
+        _payout(msg.sender, order.makerEthAmount - takerRoyaltyTotal);
 
         emit TradeExecuted(
             orderHash,
             order.maker,
             msg.sender,
-            order.makerMonAmount,
-            order.takerMonAmount,
+            order.makerEthAmount,
+            order.takerEthAmount,
             totalFee
         );
     }
@@ -433,8 +471,8 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
                     order.taker,
                     _hashNFTItems(order.makerNFTs),
                     _hashNFTItems(order.takerNFTs),
-                    order.makerMonAmount,
-                    order.takerMonAmount,
+                    order.makerEthAmount,
+                    order.takerEthAmount,
                     order.feeBps,
                     order.flatFee,
                     order.nonce,
@@ -459,14 +497,14 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
     }
 
     /// @notice Quote the protocol fee for a prospective trade.
-    function quoteFees(uint256 makerMonAmount, uint256 takerMonAmount)
+    function quoteFees(uint256 makerEthAmount, uint256 takerEthAmount)
         external
         view
         returns (uint256 makerLegFee, uint256 takerLegFee, uint256 flatFee)
     {
-        makerLegFee = (makerMonAmount * feeBps) / BPS_DENOMINATOR;
-        takerLegFee = (takerMonAmount * feeBps) / BPS_DENOMINATOR;
-        flatFee = (makerMonAmount == 0 && takerMonAmount == 0) ? flatSwapFee : 0;
+        makerLegFee = (makerEthAmount * feeBps) / BPS_DENOMINATOR;
+        takerLegFee = (takerEthAmount * feeBps) / BPS_DENOMINATOR;
+        flatFee = (makerEthAmount == 0 && takerEthAmount == 0) ? flatSwapFee : 0;
     }
 
     // ---------------------------------------------------------------------
@@ -549,55 +587,84 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
         bytes32[] memory hashes = new bytes32[](items.length);
         for (uint256 i = 0; i < items.length; i++) {
             hashes[i] = keccak256(
-                abi.encode(NFT_ITEM_TYPEHASH, items[i].contractAddress, items[i].tokenId)
+                abi.encode(NFT_ITEM_TYPEHASH, items[i].standard, items[i].contractAddress, items[i].tokenId, items[i].amount)
             );
         }
         return keccak256(abi.encodePacked(hashes));
     }
 
+    /// @dev Product policy (REQUIRES HUMAN REVIEW): split an ETH leg evenly by
+    /// item count (not ERC-1155 unit count), assigning division remainder to the
+    /// earliest items. NFT-only legs have price zero and intentionally pay no
+    /// royalty. Collections were allowlist/interface checked before this call.
+    function _quoteRoyalties(NFTItem[] calldata items, uint256 salePrice)
+        internal view returns (address[] memory recipients, uint256[] memory amounts, uint256 total)
+    {
+        recipients = new address[](items.length);
+        amounts = new uint256[](items.length);
+        if (salePrice == 0 || items.length == 0) return (recipients, amounts, 0);
+        uint256 each = salePrice / items.length;
+        uint256 remainder = salePrice % items.length;
+        for (uint256 i; i < items.length; ++i) {
+            address collection = items[i].contractAddress;
+            // Allowlist was checked before any collection call in _verifyNFTs.
+            if (IERC165(collection).supportsInterface(type(IERC2981).interfaceId)) {
+                uint256 itemPrice = each + (i < remainder ? 1 : 0);
+                (address receiver, uint256 royalty) = IERC2981(collection).royaltyInfo(items[i].tokenId, itemPrice);
+                if (receiver == address(0) && royalty != 0) revert ZeroAddress();
+                recipients[i] = receiver;
+                amounts[i] = royalty;
+                total += royalty;
+            }
+        }
+    }
+
     // slither-disable-start calls-loop
-    // calls-loop (accepted by design): the per-item ownerOf/getApproved/
-    // isApprovedForAll external reads run inside a loop bounded by
-    // MAX_ITEMS_PER_SIDE (20, enforced in fulfillTrade), and the whole
-    // settlement is atomic — a revert on any item rolls back the trade — so the
-    // bounded external calls cannot be used to grief or partially settle.
     function _verifyNFTs(NFTItem[] calldata items, address expectedOwner) internal view {
-        for (uint256 i = 0; i < items.length; i++) {
-            // Allowlist gate FIRST, before we ever call into the collection: a
-            // non-allowlisted contract is rejected without trusting — or even
-            // invoking — its ownerOf. This is the real defense against a
-            // collection whose ownerOf lies both before and after transfer; the
-            // downstream ownerOf/approval and post-transfer effectiveness checks
-            // remain as defense in depth for allowlisted (trusted) collections.
-            if (!_isAllowedCollection(items[i].contractAddress)) {
-                revert CollectionNotAllowed(items[i].contractAddress);
+        for (uint256 i; i < items.length; ++i) {
+            NFTItem calldata item = items[i];
+            // SECURITY: allowlist storage gate is deliberately before every collection call.
+            if (!_isAllowedCollection(item.contractAddress)) revert CollectionNotAllowed(item.contractAddress);
+            if (item.amount == 0 || (item.standard == 0 && item.amount != 1)) {
+                revert InvalidNFTItem(item.contractAddress, item.tokenId);
             }
-            IERC721 nft = IERC721(items[i].contractAddress);
-            if (nft.ownerOf(items[i].tokenId) != expectedOwner) {
-                revert NotTokenOwner(items[i].contractAddress, items[i].tokenId, expectedOwner);
+            bytes4 interfaceId = item.standard == 0 ? type(IERC721).interfaceId : type(IERC1155).interfaceId;
+            if (item.standard > 1 || !IERC165(item.contractAddress).supportsInterface(interfaceId)) {
+                revert UnsupportedNFTStandard(item.contractAddress, item.standard);
             }
-            if (
-                nft.getApproved(items[i].tokenId) != address(this)
-                    && !nft.isApprovedForAll(expectedOwner, address(this))
-            ) {
-                revert MissingApproval(items[i].contractAddress, items[i].tokenId, expectedOwner);
+            if (item.standard == 0) {
+                IERC721 nft = IERC721(item.contractAddress);
+                if (nft.ownerOf(item.tokenId) != expectedOwner) revert NotTokenOwner(item.contractAddress, item.tokenId, expectedOwner);
+                if (nft.getApproved(item.tokenId) != address(this) && !nft.isApprovedForAll(expectedOwner, address(this))) {
+                    revert MissingApproval(item.contractAddress, item.tokenId, expectedOwner);
+                }
+            } else {
+                uint256 required;
+                // Aggregate duplicates, while only checking each key at its first occurrence.
+                bool first = true;
+                for (uint256 j; j < i; ++j) if (items[j].standard == 1 && items[j].contractAddress == item.contractAddress && items[j].tokenId == item.tokenId) first = false;
+                if (!first) continue;
+                for (uint256 j = i; j < items.length; ++j) if (items[j].standard == 1 && items[j].contractAddress == item.contractAddress && items[j].tokenId == item.tokenId) required += items[j].amount;
+                IERC1155 nft = IERC1155(item.contractAddress);
+                if (nft.balanceOf(expectedOwner, item.tokenId) < required) revert InsufficientTokenBalance(item.contractAddress, item.tokenId, expectedOwner, required);
+                if (!nft.isApprovedForAll(expectedOwner, address(this))) revert MissingApproval(item.contractAddress, item.tokenId, expectedOwner);
             }
         }
     }
 
     function _transferNFTs(NFTItem[] calldata items, address from, address to) internal {
-        for (uint256 i = 0; i < items.length; i++) {
-            IERC721 nft = IERC721(items[i].contractAddress);
-            nft.safeTransferFrom(from, to, items[i].tokenId);
-            // Confirm the token actually moved. A non-compliant token whose
-            // transfer is a silent no-op would otherwise pass the pre-transfer
-            // ownerOf/approval checks and let us release the opposite leg for an
-            // NFT that never changed hands, breaking atomicity. This catches
-            // broken/no-op implementations; a fully adversarial `ownerOf` that
-            // lies both before and after can only be excluded by an allowlist —
-            // callers must still verify collection addresses they trade.
-            if (nft.ownerOf(items[i].tokenId) != to) {
-                revert TransferNotEffective(items[i].contractAddress, items[i].tokenId);
+        for (uint256 i; i < items.length; ++i) {
+            NFTItem calldata item = items[i];
+            if (item.standard == 0) {
+                IERC721 nft = IERC721(item.contractAddress);
+                nft.safeTransferFrom(from, to, item.tokenId);
+                if (nft.ownerOf(item.tokenId) != to) revert TransferNotEffective(item.contractAddress, item.tokenId);
+            } else {
+                IERC1155 nft = IERC1155(item.contractAddress);
+                uint256 beforeBalance = nft.balanceOf(to, item.tokenId);
+                nft.safeTransferFrom(from, to, item.tokenId, item.amount, "");
+                uint256 afterBalance = nft.balanceOf(to, item.tokenId);
+                if (afterBalance < beforeBalance || afterBalance - beforeBalance != item.amount) revert TransferNotEffective(item.contractAddress, item.tokenId);
             }
         }
     }
@@ -621,7 +688,7 @@ contract Handshake is EIP712, ReentrancyGuard, Pausable, Ownable2Step {
         if (!success) revert NativeTransferFailed(to, amount);
     }
 
-    /// @dev Auto-withdraw a MON proceeds leg during settlement. Sends `amount`
+    /// @dev Auto-withdraw a ETH proceeds leg during settlement. Sends `amount`
     ///      directly to `to` with a bounded gas stipend (so a hostile recipient
     ///      cannot burn gas or OOG the rest of the settlement), discarding
     ///      returndata. If the direct send fails — recipient reverts, needs more

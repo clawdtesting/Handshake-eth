@@ -3,17 +3,16 @@
 [![contracts](https://github.com/0XNatasim/NFT/actions/workflows/contracts.yml/badge.svg)](https://github.com/0XNatasim/NFT/actions/workflows/contracts.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Solidity 0.8.28](https://img.shields.io/badge/Solidity-0.8.28-363636)
-[![Monad mainnet — verified](https://img.shields.io/badge/Monad%20mainnet-verified-836EF9)](https://monadscan.com/address/0x017605384782b0841Fde1f1E8539EbEDD2c43420#code)
 
-A peer-to-peer NFT trading marketplace for the Monad ecosystem — no bots, no snipers. Users negotiate and exchange NFTs directly wallet-to-wallet — NFT-for-NFT, NFT+MON, MON-for-NFT, private wallet-targeted offers — settled atomically by a non-custodial smart contract.
+A peer-to-peer NFT trading marketplace for the Ethereum ecosystem — no bots, no snipers. Users negotiate and exchange NFTs directly wallet-to-wallet — NFT-for-NFT, NFT+ETH, ETH-for-NFT, private wallet-targeted offers — settled atomically by a non-custodial smart contract.
 
-> The on-chain settlement contract keeps its original name (`Handshake`) and EIP-712 domain (`MonadMarket`) — these are baked into the deployed bytecode and every signature, so they must not be renamed. "Handshake" is the product brand only.
+> The on-chain settlement contract keeps its original name (`Handshake`) and EIP-712 domain (`EthereumMarket`) — these are baked into the deployed bytecode and every signature, so they must not be renamed. "Handshake" is the product brand only.
 
 It's a trading desk, not a sniping ground: off-chain signed orders (free to create), offer expirations, private offers, wallet reputation, and no instant floor-sniping mechanics.
 
 ## Deal Rooms — Live Haggle 🤝
 
-Handshake's negotiation layer: a **private, real-time deal room** for any two wallets. Counter each other's terms freely — drafts are signature-less and can never move assets — watch the changes land live (presence + delta chips per round), and when you both agree, the maker signs **one** EIP-712 order that settles atomically in sub-second Monad finality. Bots can't outbid a deal they can't see.
+Handshake's negotiation layer: a **private, real-time deal room** for any two wallets. Counter each other's terms freely — drafts are signature-less and can never move assets — watch the changes land live (presence + delta chips per round), and when you both agree, the maker signs **one** EIP-712 order that settles atomically in sub-second Ethereum finality. Bots can't outbid a deal they can't see.
 
 - Enter from any offer (**Suggest changes**), the Wanted board (**Haggle live**), or `/rooms/new` with any wallet.
 - One rule makes it safe: *only the final mutually-agreed revision is ever executable.* Replacing a live signed offer requires retiring its nonce on-chain first, so two versions of a deal can never coexist.
@@ -56,19 +55,19 @@ Tests: `npm test` (app) · `npm run contracts:test` (Foundry). Typecheck: `npm r
        ▼
 ┌──────────────────────────────┐
 │ Handshake.sol     │  EIP-712 verify · nonce/replay ·
-│ (Monad, non-custodial)        │  expiry · ownership · approvals ·
-└──────────────────────────────┘  atomic NFT+MON transfer · pausable
+│ (Ethereum, non-custodial)        │  expiry · ownership · approvals ·
+└──────────────────────────────┘  atomic NFT+ETH transfer · pausable
 ```
 
 - **Orders are off-chain.** Makers sign EIP-712 `TradeOrder` structs; the signature and order live in Supabase. Creating/listing an offer costs zero gas.
-- **Settlement is on-chain and atomic.** The taker calls `fulfillTrade`. The contract verifies the maker's signature, nonce, expiry, designated taker, NFT ownership, and approvals — then moves all NFTs and MON in one transaction. Any failure reverts everything.
-- **Maker-side MON** comes from a self-managed escrow on the settlement contract (`deposit`/`withdraw`). The owner can never touch user balances. Taker-side MON is `msg.value`.
+- **Settlement is on-chain and atomic.** The taker calls `fulfillTrade`. The contract verifies the maker's signature, nonce, expiry, designated taker, NFT ownership, and approvals — then moves all NFTs and ETH in one transaction. Any failure reverts everything.
+- **Maker-side ETH** comes from a self-managed escrow on the settlement contract (`deposit`/`withdraw`). The owner can never touch user balances. Taker-side ETH is `msg.value`.
 - **Status updates are trustless.** The API only marks an offer completed after verifying the `TradeExecuted` event in the tx receipt, and only marks it cancelled after verifying the `TradeCancelled` event for that maker+nonce — so a fill can't be mislabeled as a cancellation.
 
 ### Fees
 
-- The fee both parties agree to is **baked into the signed order** (`feeBps`, `flatFee`), so the owner can never change the fee on an already-signed order. Default `feeBps = 100` (1%) on **each MON leg**, hard-capped at `MAX_FEE_BPS = 500` (5%).
-- Pure NFT-for-NFT swaps pay **no percentage fee**; an optional `flatFee` (capped at `MAX_FLAT_SWAP_FEE = 1 MON`) can apply so swap-heavy volume still generates revenue.
+- The fee both parties agree to is **baked into the signed order** (`feeBps`, `flatFee`), so the owner can never change the fee on an already-signed order. Default `feeBps = 100` (1%) on **each ETH leg**, hard-capped at `MAX_FEE_BPS = 500` (5%).
+- Pure NFT-for-NFT swaps pay **no percentage fee**; an optional `flatFee` (capped at `MAX_FLAT_SWAP_FEE = 1 ETH`) can apply so swap-heavy volume still generates revenue.
 - Fees use **pull payments**: they accrue to `pendingFees[feeRecipient]` and are claimed via `withdrawFees()`, so a reverting fee recipient can never brick a trade.
 
 ## File tree
@@ -104,7 +103,7 @@ components/
   trade/{nft-card,offer-card,fee-breakdown}.tsx
   ui/{button,card,input,badge,skeleton}.tsx
 lib/
-  chains/monad.ts                   # all Monad config (env-driven)
+  chains/ethereum.ts                   # all Ethereum config (env-driven)
   chains/client.ts                  # server-side viem public client
   orders/eip712.ts                  # order types, hashing, EOA + EIP-1271 verification
   fees.ts                           # fee math (mirrors the contract)
@@ -132,17 +131,37 @@ SECURITY.md                         # disclosure policy + scope
 
 | Network | Handshake | Status |
 | --- | --- | --- |
-| Monad Mainnet (143) | [`0x017605384782b0841Fde1f1E8539EbEDD2c43420`](https://monadscan.com/address/0x017605384782b0841Fde1f1E8539EbEDD2c43420#code) | ✅ Verified on MonadScan (EIP-1271 smart-wallet support) |
+| Ethereum Mainnet (chain 1) | not yet deployed — TBD |
 
-Previous deployments `0x72F3E21c12E85F2043e316737179734b30c87533` and
-`0xA9E7f8D08ecd275D9Dd7C95cF9a557B8bce4a277` are superseded by the address
-above, which additionally accepts EIP-1271 signatures from smart-contract
-wallets.
+No Ethereum deployment exists yet; deployment and verification remain pending.
 
-Source is verified (Solidity `0.8.28`, optimizer 1000 runs, EVM `cancun`, MIT)
-— anyone can read and verify the settlement logic on MonadScan. This is the
+After deployment, publish and verify the Solidity `0.8.28` / optimizer 1000 / EVM `cancun` build on Etherscan. This is the
 build with order-bound fees, the flat-fee cap, pull-payment fees, and the
 `Pausable` emergency stop.
+
+## Vercel deployment
+
+Before promoting a Vercel deployment to production:
+
+1. Apply every migration in `supabase/migrations/` to production Supabase and
+   configure its allowed site and redirect URLs for the production domain.
+2. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`,
+   `NEXT_PUBLIC_ETH_MAINNET_RPC_URL`, `ETH_MAINNET_RPC_URL`, and `CRON_SECRET`
+   in Vercel. Public variables are embedded in browser bundles; use a
+   domain-restricted public RPC key that does not share server credentials.
+3. Set `NEXT_PUBLIC_SETTLEMENT_CONTRACT_ADDRESS` and `HANDSHAKE_ADDRESS` only
+   after the audited Ethereum deployment exists. Until then, treat the site as
+   a preview and do not present settlement as live.
+4. Do **not** add `PRIVATE_KEY_DEPLOYER` to Vercel. Deployment keys belong in a
+   dedicated deployment environment, not the web application runtime.
+5. Allow the production domain and intentional preview domains in WalletConnect
+   and NFT-provider dashboards. Avoid wildcard preview origins for production
+   API credentials wherever the provider supports an origin allowlist.
+
+`vercel.json` schedules protected deal-room reconciliation daily as a baseline
+for low-frequency hosting plans. Prompt expiry reconciliation needs a plan that
+supports an hourly schedule; change the cron only after confirming plan limits.
 
 ## Testing
 
@@ -157,10 +176,10 @@ Contracts run on Foundry (compiled with the exact deployed toolchain, solc
 | `HandshakeAllowlist` | Allowlist gating, the 48h/instant timelock asymmetry, and that a lying-`ownerOf` collection is excluded before it is ever called. |
 | `HandshakeSolvency` (invariant) | `balance == Σescrow + ΣpendingFees` holds across arbitrary deposit / settle / propose / remove / warp sequences. |
 | `HandshakeFallbackSolvency` (invariant) | Same solvency invariant when **every** payout is forced through the post-interaction escrow-credit fallback. |
-| `HandshakeAdversarial` | Reentrancy at the mid-settlement NFT callback on **both** legs (contract taker and EIP-1271 contract maker re-entering `withdraw`/`withdrawFees`) unwinds the trade; gas-griefing and return-bomb payout recipients fall back to a recoverable escrow credit; dual-MON-leg fees exact with off-by-one payments rejected. |
-| `HandshakeFeeMath` (fuzz) | Fee accrual is exact and solvency holds for all `makerMon`/`takerMon`/`feeBps` and the flat-fee branch, including the fee caps and the integer-division rounding boundary. |
+| `HandshakeAdversarial` | Reentrancy at the mid-settlement NFT callback on **both** legs (contract taker and EIP-1271 contract maker re-entering `withdraw`/`withdrawFees`) unwinds the trade; gas-griefing and return-bomb payout recipients fall back to a recoverable escrow credit; dual-ETH-leg fees exact with off-by-one payments rejected. |
+| `HandshakeFeeMath` (fuzz) | Fee accrual is exact and solvency holds for all `makerEth`/`takerEth`/`feeBps` and the flat-fee branch, including the fee caps and the integer-division rounding boundary. |
 | `HandshakeUpgradeableRisk` | Executable demo of the one residual risk: an allowlisted **upgradeable** collection can swap in a lying `ownerOf` and enable theft — and that instant `removeCollection` stops it. |
-| `HandshakeForkCollections` (fork) | The real seeded Monad collections are non-upgradeable, ERC-721, and transferable. Self-skips without `MONAD_RPC_URL`; runs nightly / on demand. |
+| `HandshakeForkCollections` (fork) | The real seeded Ethereum collections are non-upgradeable, ERC-721, and transferable. Self-skips without `ETH_MAINNET_RPC_URL`; runs nightly / on demand. |
 
 Static analysis (Slither) triage is in [`docs/slither-findings.md`](docs/slither-findings.md);
 the full adversarial writeup is in [`docs/SECURITY_AUDIT.md`](docs/SECURITY_AUDIT.md).
@@ -175,7 +194,7 @@ Vulnerability disclosure policy: [`SECURITY.md`](SECURITY.md). Detailed writeups
 [`docs/slither-findings.md`](docs/slither-findings.md) (static analysis). No
 independent external audit has been performed yet.
 
-**Contract.** EIP-712 signatures (EOA + EIP-1271 smart wallets) bound to chain id + verifying contract; **fees (bps + flat) are baked into the signed order** so they can't change after signing, capped by `MAX_FEE_BPS`/`MAX_FLAT_SWAP_FEE`; per-maker nonce map prevents replay and powers on-chain cancellation; expiry enforced; designated-taker enforcement; ownership *and* approval verified before any transfer, plus a **post-transfer effectiveness check**; **collection allowlist** with an asymmetric timelock (48h add, instant remove) that excludes a lying `ownerOf` collection before it is ever called; checks-effects-interactions with `nonReentrant`; MON proceeds auto-withdrawn with a bounded gas stipend that **falls back to a pull-payment escrow credit** so a hostile recipient can't grief/OOG settlement; **protocol fees use pull payments** (`withdrawFees`); **`Pausable`** emergency stop on settlement (escrow/fee withdrawal and cancellation stay open); custom errors throughout; `Ownable2Step` admin limited to fee config + allowlist — **no admin path can move user NFTs or escrow.**
+**Contract.** EIP-712 signatures (EOA + EIP-1271 smart wallets) bound to chain id + verifying contract; **fees (bps + flat) are baked into the signed order** so they can't change after signing, capped by `MAX_FEE_BPS`/`MAX_FLAT_SWAP_FEE`; per-maker nonce map prevents replay and powers on-chain cancellation; expiry enforced; designated-taker enforcement; ownership *and* approval verified before any transfer, plus a **post-transfer effectiveness check**; **collection allowlist** with an asymmetric timelock (48h add, instant remove) that excludes a lying `ownerOf` collection before it is ever called; checks-effects-interactions with `nonReentrant`; ETH proceeds auto-withdrawn with a bounded gas stipend that **falls back to a pull-payment escrow credit** so a hostile recipient can't grief/OOG settlement; **protocol fees use pull payments** (`withdrawFees`); **`Pausable`** emergency stop on settlement (escrow/fee withdrawal and cancellation stay open); custom errors throughout; `Ownable2Step` admin limited to fee config + allowlist — **no admin path can move user NFTs or escrow.**
 
 **Test coverage.** The Foundry suite exercises the happy path, replay, fees, pause and the allowlist timelock, plus: reentrancy at the mid-settlement NFT callback on **both** legs (contract taker and EIP-1271 contract maker re-entering `withdraw`/`withdrawFees`), the `_payout` escrow-credit fallback under gas-griefing and return-bomb recipients, fuzzed **solvency** and **fee-math** invariants (incl. the fee caps and rounding boundary), an executable **upgradeable-collection** theft demo, and a **fork test** asserting the real seeded collections are non-upgradeable and transferable.
 
@@ -183,7 +202,7 @@ independent external audit has been performed yet.
 
 **Known limitations.**
 - ERC-721 only (no ERC-1155 yet); `quantity` column is forward-compatible.
-- Maker-side MON requires an escrow deposit (native tokens can't be pulled by signature). A WMON + permit path would remove this step.
+- Maker-side ETH requires an escrow deposit (native tokens can't be pulled by signature). A WMON + permit path would remove this step.
 - Rate limiter uses Upstash Redis when `UPSTASH_REDIS_REST_*` are set; otherwise falls back to a per-instance in-memory window (fine for single-instance/dev).
 - Off-chain order book means a cancelled-in-DB-only offer would still be technically fillable — which is why cancellation is on-chain (`cancelNonce`) and the UI enforces it.
 - The maker's NFT approvals must be in place before a taker accepts; the offer page surfaces approval failures from the contract but a pre-flight maker approval step in `/create` would be smoother UX.
@@ -199,3 +218,11 @@ independent external audit has been performed yet.
 - SIWE authentication, Discord linking, reputation badges & leaderboard
 - Indexer service consuming `TradeExecuted`/`TradeCancelled` events for fully event-driven status updates
 - Trade history analytics and referral system
+
+## ERC721-C support
+
+ERC721-C uses the standard ERC-721 path, but creators must authorize the deployed Handshake operator in their transfer validator. Clients should simulate settlement before signing; an unauthorized operator reverts the entire atomic trade. The team must request authorization directly from each creator and must not bypass validators.
+
+## Royalty policy — human review required
+
+Royalties are seller-borne and deducted from ETH consideration. Each leg is divided by item count and remainder wei go to the earliest items. An ERC-1155 item counts once regardless of quantity. NFT-only swaps intentionally pay no royalty. These decisions require review before deployment. Large mixed orders are capped at 20 items per side, but ERC-721 and ERC-1155 gas costs must be benchmarked. A fresh independent audit is required before mainnet deployment.

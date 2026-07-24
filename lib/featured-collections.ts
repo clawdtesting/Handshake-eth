@@ -1,6 +1,6 @@
 /**
  * Curated collections surfaced as quick-select buttons in the trade
- * builder. Useful while indexer coverage on Monad is incomplete.
+ * builder. Useful while indexer coverage on Ethereum is incomplete.
  */
 export interface FeaturedCollection {
   name: string;
@@ -122,7 +122,7 @@ export const FEATURED_COLLECTIONS: FeaturedCollection[] = [
     transferValidator: false,
   },
   {
-    name: "Monads Mogs",
+    name: "Ethereums Mogs",
     address: "0x1414f3baf22404c42fd656af4afaab4934045137",
     image: "/Logomark.png",
     transferValidator: false,

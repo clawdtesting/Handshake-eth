@@ -18,11 +18,16 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const header = req.headers.get("authorization");
-    if (header !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  // Fail closed in production. Vercel Cron sends CRON_SECRET as a Bearer
+  // token; silently accepting an unset secret would expose a service-role
+  // database mutation endpoint to the public internet.
+  if (!secret && process.env.NODE_ENV === "production") {
+    console.error("CRON_SECRET is required for the deal-room cron route");
+    return NextResponse.json({ error: "Cron is not configured" }, { status: 503 });
+  }
+  const header = req.headers.get("authorization");
+  if (secret && header !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {

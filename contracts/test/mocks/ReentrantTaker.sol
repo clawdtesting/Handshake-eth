@@ -9,7 +9,7 @@ import {Handshake} from "../../src/Handshake.sol";
 /// @notice A contract taker that attempts to re-enter Handshake from inside the
 ///         ERC-721 receive hook. When the maker's NFT is `safeTransferFrom`'d to
 ///         this taker mid-settlement, `onERC721Received` fires AFTER the nonce/
-///         escrow effects are committed but BEFORE the second NFT leg and the MON
+///         escrow effects are committed but BEFORE the second NFT leg and the ETH
 ///         payouts. That is the single most delicate window in `fulfillTrade`.
 ///         This mock re-enters `withdraw`/`withdrawFees` there so a test can prove
 ///         the ReentrancyGuard holds at exactly that point: the re-entrant call

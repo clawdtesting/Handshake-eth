@@ -163,7 +163,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <Card>
       <CardContent className="p-4 text-center">
-        <p className="text-xl font-bold text-monad-purple">{value}</p>
+        <p className="text-xl font-bold text-ethereum-purple">{value}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
       </CardContent>
     </Card>
@@ -228,7 +228,7 @@ function DealColumn({
         "flex min-h-[28rem] flex-col overflow-hidden rounded-2xl border bg-card/80 shadow-lg",
         isBlue
           ? "border-cyan-300/25 shadow-cyan-400/5"
-          : "border-monad-purple/30 shadow-monad-purple/10"
+          : "border-ethereum-purple/30 shadow-ethereum-purple/10"
       )}
     >
       <div
@@ -236,7 +236,7 @@ function DealColumn({
           "border-b p-5",
           isBlue
             ? "border-cyan-300/20 bg-gradient-to-br from-cyan-400/15 via-card to-blue-500/10"
-            : "border-monad-purple/20 bg-gradient-to-br from-monad-purple/20 via-card to-fuchsia-500/10"
+            : "border-ethereum-purple/20 bg-gradient-to-br from-ethereum-purple/20 via-card to-fuchsia-500/10"
         )}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
@@ -246,7 +246,7 @@ function DealColumn({
                 "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
                 isBlue
                   ? "bg-cyan-400/15 text-cyan-200"
-                  : "bg-monad-purple/20 text-monad-purple"
+                  : "bg-ethereum-purple/20 text-ethereum-purple"
               )}
             >
               {icon}
@@ -256,7 +256,7 @@ function DealColumn({
               <p
                 className={cn(
                   "mt-1 text-sm font-semibold",
-                  isBlue ? "text-cyan-200" : "text-monad-purple"
+                  isBlue ? "text-cyan-200" : "text-ethereum-purple"
                 )}
               >
                 {countLabel}
@@ -268,7 +268,7 @@ function DealColumn({
               "rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide",
               isBlue
                 ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-200"
-                : "border-monad-purple/40 bg-monad-purple/10 text-monad-purple"
+                : "border-ethereum-purple/40 bg-ethereum-purple/10 text-ethereum-purple"
             )}
           >
             {badge}

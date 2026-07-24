@@ -43,8 +43,8 @@ export const createOfferSchema = z
     takerAddress: addressSchema.nullable().optional(),
     makerNFTs: z.array(nftItemSchema).max(20),
     takerNFTs: z.array(nftItemSchema).max(20),
-    makerMonAmount: uint256Schema,
-    takerMonAmount: uint256Schema,
+    makerEthAmount: uint256Schema,
+    takerEthAmount: uint256Schema,
     feeBps: z.number().int().min(0).max(500),
     flatFee: uint256Schema,
     nonce: uint256Schema,
@@ -54,11 +54,11 @@ export const createOfferSchema = z
     requiredMaxRarityRank: z.number().int().positive().nullable().optional(),
   })
   .refine(
-    (o) => o.makerNFTs.length > 0 || safeBigInt(o.makerMonAmount) > 0n,
+    (o) => o.makerNFTs.length > 0 || safeBigInt(o.makerEthAmount) > 0n,
     "Maker side must offer something"
   )
   .refine(
-    (o) => o.takerNFTs.length > 0 || safeBigInt(o.takerMonAmount) > 0n,
+    (o) => o.takerNFTs.length > 0 || safeBigInt(o.takerEthAmount) > 0n,
     "Taker side must request something"
   )
   .refine((o) => !o.isPrivate || !!o.takerAddress, {

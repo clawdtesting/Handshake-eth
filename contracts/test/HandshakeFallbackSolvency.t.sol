@@ -7,8 +7,8 @@ import {Handshake} from "../src/Handshake.sol";
 import {MockERC721} from "./mocks/MockERC721.sol";
 import {RejectingReceiver} from "./mocks/RejectingReceiver.sol";
 
-/// @notice Fuzzed handler that settles every priced fill against a MON-rejecting
-///         contract taker, so the maker's MON leg can never be delivered
+/// @notice Fuzzed handler that settles every priced fill against a ETH-rejecting
+///         contract taker, so the maker's ETH leg can never be delivered
 ///         directly and ALWAYS falls back to the _payout escrow-credit branch
 ///         (escrowBalance[to] += amount) — the single state write that happens
 ///         after external interactions. The existing solvency invariant only
@@ -44,17 +44,17 @@ contract FallbackSolvencyHandler is Test {
         taker.approveCollection(address(colB));
     }
 
-    /// @dev A priced NFT<->NFT fill (maker MON leg always > 0) settled by the
+    /// @dev A priced NFT<->NFT fill (maker ETH leg always > 0) settled by the
     ///      rejecting taker, so the maker-leg payout always hits the escrow-credit
     ///      fallback. Wrapped in try/catch: once a token pair is consumed the fill
     ///      reverts (maker no longer owns it) and is skipped — the invariant must
     ///      still hold on the rolled-back state.
-    function fill(uint256 tokenSeed, uint256 makerMonSeed) external {
+    function fill(uint256 tokenSeed, uint256 makerEthSeed) external {
         uint256 tokenId = bound(tokenSeed, 0, POOL - 1);
-        uint256 makerMon = bound(makerMonSeed, 0.001 ether, 5 ether); // always priced
+        uint256 makerEth = bound(makerEthSeed, 0.001 ether, 5 ether); // always priced
 
         // Top up the maker's escrow to fund the leg + its 1% fee.
-        uint256 makerCost = makerMon + (makerMon * 100) / 10_000;
+        uint256 makerCost = makerEth + (makerEth * 100) / 10_000;
         uint256 have = hs.escrowBalance(maker);
         if (have < makerCost) {
             uint256 need = makerCost - have;
@@ -66,17 +66,17 @@ contract FallbackSolvencyHandler is Test {
         uint256 nonce = ++nonceCounter;
 
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](1);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(colA), tokenId: tokenId});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colA), tokenId: tokenId, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(colB), tokenId: tokenId});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colB), tokenId: tokenId, amount: 1});
 
         Handshake.TradeOrder memory order = Handshake.TradeOrder({
             maker: maker,
             taker: address(taker),
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: makerMon,
-            takerMonAmount: 0,
+            makerEthAmount: makerEth,
+            takerEthAmount: 0,
             feeBps: 100,
             flatFee: 0,
             nonce: nonce,
@@ -85,7 +85,7 @@ contract FallbackSolvencyHandler is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(MAKER_PK, hs.hashOrder(order));
         bytes memory sig = abi.encodePacked(r, s, v);
 
-        // No taker MON leg -> msg.value 0. The rejecting taker fills.
+        // No taker ETH leg -> msg.value 0. The rejecting taker fills.
         try taker.fulfill(order, sig) {} catch {}
     }
 }

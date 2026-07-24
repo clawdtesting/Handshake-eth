@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Loader2, MessagesSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRoomMutations, useRoomSession } from "@/hooks/use-deal-rooms";
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 import { isCollectionBid } from "@/lib/collection-bids";
 import type { DealRoomDraft, TradeOffer } from "@/lib/types";
 
@@ -69,15 +69,15 @@ export function SuggestChangesButton({
             imageUrl: n.imageUrl,
             rarityRank: n.rarityRank ?? null,
           })),
-        makerMonAmount: offer.makerMonAmount,
-        takerMonAmount: offer.takerMonAmount,
+        makerEthAmount: offer.makerEthAmount,
+        takerEthAmount: offer.takerEthAmount,
         feeBps: offer.feeBps,
         flatFee: offer.flatFee,
         offerExpiry: offer.expiry > now ? offer.expiry : now + 86_400,
       };
 
       const res = await createRoom.mutateAsync({
-        chainId: MONAD_CHAIN_ID,
+        chainId: ETH_MAINNET_CHAIN_ID,
         counterparty: cp,
         sourceOfferId: offer.id,
         draft,

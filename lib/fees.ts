@@ -1,6 +1,6 @@
 /**
  * Protocol fee math. Mirrors Handshake.sol exactly
- * (integer division, bps on each MON leg, flat fee on NFT-only swaps).
+ * (integer division, bps on each ETH leg, flat fee on NFT-only swaps).
  */
 
 export const DEFAULT_FEE_BPS = 100n; // 1%
@@ -11,28 +11,28 @@ export interface FeeQuote {
   takerLegFee: bigint;
   flatFee: bigint;
   totalFee: bigint;
-  /** msg.value the taker must send: takerMonAmount + takerLegFee + flatFee */
+  /** msg.value the taker must send: takerEthAmount + takerLegFee + flatFee */
   takerPays: bigint;
-  /** escrow the maker must hold: makerMonAmount + makerLegFee */
+  /** escrow the maker must hold: makerEthAmount + makerLegFee */
   makerEscrowRequired: bigint;
 }
 
 export function quoteFees(
-  makerMonAmount: bigint,
-  takerMonAmount: bigint,
+  makerEthAmount: bigint,
+  takerEthAmount: bigint,
   feeBps: bigint = DEFAULT_FEE_BPS,
   flatSwapFee: bigint = 0n
 ): FeeQuote {
-  const makerLegFee = (makerMonAmount * feeBps) / BPS_DENOMINATOR;
-  const takerLegFee = (takerMonAmount * feeBps) / BPS_DENOMINATOR;
-  const flatFee = makerMonAmount === 0n && takerMonAmount === 0n ? flatSwapFee : 0n;
+  const makerLegFee = (makerEthAmount * feeBps) / BPS_DENOMINATOR;
+  const takerLegFee = (takerEthAmount * feeBps) / BPS_DENOMINATOR;
+  const flatFee = makerEthAmount === 0n && takerEthAmount === 0n ? flatSwapFee : 0n;
   const totalFee = makerLegFee + takerLegFee + flatFee;
   return {
     makerLegFee,
     takerLegFee,
     flatFee,
     totalFee,
-    takerPays: takerMonAmount + takerLegFee + flatFee,
-    makerEscrowRequired: makerMonAmount + makerLegFee,
+    takerPays: takerEthAmount + takerLegFee + flatFee,
+    makerEscrowRequired: makerEthAmount + makerLegFee,
   };
 }

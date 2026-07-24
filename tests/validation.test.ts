@@ -7,7 +7,7 @@ import {
 } from "@/lib/validation/offers";
 
 const validOffer = {
-  chainId: 10143,
+  chainId: 1,
   makerAddress: "0x" + "1".repeat(40),
   takerAddress: null,
   makerNFTs: [
@@ -18,8 +18,8 @@ const validOffer = {
     },
   ],
   takerNFTs: [],
-  makerMonAmount: "0",
-  takerMonAmount: "1000000000000000000",
+  makerEthAmount: "0",
+  takerEthAmount: "1000000000000000000",
   feeBps: 100,
   flatFee: "0",
   nonce: "12345",
@@ -42,14 +42,14 @@ describe("createOfferSchema", () => {
 
   it("rejects empty maker side", () => {
     expect(
-      createOfferSchema.safeParse({ ...validOffer, makerNFTs: [], makerMonAmount: "0" })
+      createOfferSchema.safeParse({ ...validOffer, makerNFTs: [], makerEthAmount: "0" })
         .success
     ).toBe(false);
   });
 
   it("rejects empty taker side", () => {
     expect(
-      createOfferSchema.safeParse({ ...validOffer, takerNFTs: [], takerMonAmount: "0" })
+      createOfferSchema.safeParse({ ...validOffer, takerNFTs: [], takerEthAmount: "0" })
         .success
     ).toBe(false);
   });
@@ -93,7 +93,7 @@ describe("createOfferSchema", () => {
 
   it("rejects non-numeric amounts", () => {
     expect(
-      createOfferSchema.safeParse({ ...validOffer, takerMonAmount: "1.5" }).success
+      createOfferSchema.safeParse({ ...validOffer, takerEthAmount: "1.5" }).success
     ).toBe(false);
   });
 

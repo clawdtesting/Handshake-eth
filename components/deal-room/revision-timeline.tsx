@@ -9,7 +9,7 @@ import type { DealRoomRevision } from "@/lib/types";
 
 /**
  * The haggle, newest round first. Each round shows who proposed it, delta
- * chips vs the previous round ("+ Molandak #4412", "− 20 MON"), the signed
+ * chips vs the previous round ("+ Molandak #4412", "− 20 ETH"), the signed
  * note, and its acceptance state.
  */
 export function RevisionTimeline({
@@ -45,7 +45,7 @@ export function RevisionTimeline({
             className={cn(
               "rounded-lg border p-3",
               isCurrent
-                ? "border-monad-purple/40 bg-monad-purple/5"
+                ? "border-ethereum-purple/40 bg-ethereum-purple/5"
                 : "border-border bg-card/50 opacity-70"
             )}
           >
@@ -81,8 +81,8 @@ export function RevisionTimeline({
                         "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
                       chip.kind === "nft-removed" &&
                         "border-red-500/30 bg-red-500/10 text-red-400",
-                      chip.kind === "mon" &&
-                        "border-monad-purple/30 bg-monad-purple/10 text-monad-purple",
+                      chip.kind === "eth" &&
+                        "border-ethereum-purple/30 bg-ethereum-purple/10 text-ethereum-purple",
                       chip.kind === "expiry" &&
                         "border-amber-500/30 bg-amber-500/10 text-amber-400"
                     )}
