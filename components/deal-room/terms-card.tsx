@@ -4,10 +4,10 @@ import { ExternalLink } from "lucide-react";
 import { NFTMedia } from "@/components/ui/nft-media";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNftMediaFallback } from "@/hooks/use-nft-media-fallback";
-import { explorerTokenUrl } from "@/lib/chains/monad";
+import { explorerTokenUrl } from "@/lib/chains/ethereum";
 import {
   cn,
-  formatMon,
+  formatEth,
   prettyCollectionName,
   rarityRankBadgeClass,
   shortAddress,
@@ -80,7 +80,7 @@ function RevisionNFTTile({ nft }: { nft: RevisionNFT }) {
           href={explorerTokenUrl(nft.contractAddress, nft.tokenId)}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-monad-purple"
+          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-ethereum-purple"
           title={nft.contractAddress}
         >
           {shortAddress(nft.contractAddress)}
@@ -94,22 +94,22 @@ function RevisionNFTTile({ nft }: { nft: RevisionNFT }) {
 function AssetSide({
   title,
   nfts,
-  monWei,
+  ethWei,
   highlight,
 }: {
   title: string;
   nfts: RevisionNFT[];
-  monWei: string;
+  ethWei: string;
   highlight?: boolean;
 }) {
-  const mon = BigInt(monWei);
-  const empty = nfts.length === 0 && mon === 0n;
+  const eth = BigInt(ethWei);
+  const empty = nfts.length === 0 && eth === 0n;
   return (
     <div
       className={cn(
         "flex-1 rounded-lg border p-4",
         highlight
-          ? "border-monad-purple/40 bg-monad-purple/5"
+          ? "border-ethereum-purple/40 bg-ethereum-purple/5"
           : "border-border bg-secondary/30"
       )}
     >
@@ -130,12 +130,12 @@ function AssetSide({
               ))}
             </div>
           )}
-          {mon > 0n && (
+          {eth > 0n && (
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-bold text-monad-purple">
-                {formatMon(mon)}
+              <span className="text-xl font-bold text-ethereum-purple">
+                {formatEth(eth)}
               </span>
-              <span className="text-sm text-muted-foreground">MON</span>
+              <span className="text-sm text-muted-foreground">ETH</span>
             </div>
           )}
         </div>
@@ -157,11 +157,11 @@ export function TermsCard({
     revision.makerAddress.toLowerCase() === viewerWallet.toLowerCase();
 
   const give = viewerIsMaker
-    ? { nfts: revision.makerNFTs, mon: revision.makerMonAmount }
-    : { nfts: revision.takerNFTs, mon: revision.takerMonAmount };
+    ? { nfts: revision.makerNFTs, eth: revision.makerEthAmount }
+    : { nfts: revision.takerNFTs, eth: revision.takerEthAmount };
   const receive = viewerIsMaker
-    ? { nfts: revision.takerNFTs, mon: revision.takerMonAmount }
-    : { nfts: revision.makerNFTs, mon: revision.makerMonAmount };
+    ? { nfts: revision.takerNFTs, eth: revision.takerEthAmount }
+    : { nfts: revision.makerNFTs, eth: revision.makerEthAmount };
 
   return (
     <Card>
@@ -173,14 +173,14 @@ export function TermsCard({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <AssetSide title="You give" nfts={give.nfts} monWei={give.mon} />
-          <div className="flex items-center justify-center text-2xl text-monad-purple sm:px-1">
+          <AssetSide title="You give" nfts={give.nfts} ethWei={give.eth} />
+          <div className="flex items-center justify-center text-2xl text-ethereum-purple sm:px-1">
             🤝
           </div>
           <AssetSide
             title="You receive"
             nfts={receive.nfts}
-            monWei={receive.mon}
+            ethWei={receive.eth}
             highlight
           />
         </div>

@@ -12,7 +12,7 @@ import {
   rarityRankBadgeClass,
   shortAddress,
   timeUntil,
-  formatMon,
+  formatEth,
   prettyCollectionName,
 } from "@/lib/utils";
 
@@ -47,9 +47,9 @@ export function OfferCard({
     <Link
       href={`/offers/${offer.id}`}
       className={cn(
-        "block rounded-xl border bg-card p-4 transition-colors hover:border-monad-purple/50",
+        "block rounded-xl border bg-card p-4 transition-colors hover:border-ethereum-purple/50",
         isIncoming && "border-cyan-300/25 hover:border-cyan-300/50",
-        isCreated && "border-monad-purple/30"
+        isCreated && "border-ethereum-purple/30"
       )}
     >
       <div className="mb-3 flex items-center justify-between">
@@ -93,9 +93,9 @@ export function OfferCard({
       )}
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <TradeSide nfts={makerNfts} mon={offer.makerMonAmount} label="Maker gives" />
-        <ArrowLeftRight className="h-5 w-5 text-monad-purple" />
-        <TradeSide nfts={takerNfts} mon={offer.takerMonAmount} label="Taker gives" />
+        <TradeSide nfts={makerNfts} eth={offer.makerEthAmount} label="Maker gives" />
+        <ArrowLeftRight className="h-5 w-5 text-ethereum-purple" />
+        <TradeSide nfts={takerNfts} eth={offer.takerEthAmount} label="Taker gives" />
       </div>
     </Link>
   );
@@ -110,7 +110,7 @@ function OwnershipBadge({ kind }: { kind: "incoming" | "created" }) {
         "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide",
         isIncoming
           ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-200"
-          : "border-monad-purple/40 bg-monad-purple/10 text-monad-purple"
+          : "border-ethereum-purple/40 bg-ethereum-purple/10 text-ethereum-purple"
       )}
     >
       {isIncoming ? "Needs Action" : "Created by You"}
@@ -126,7 +126,7 @@ export function OfferListItem({ offer }: { offer: TradeOffer }) {
   return (
     <Link
       href={`/offers/${offer.id}`}
-      className="block overflow-x-auto rounded-xl border bg-card px-4 py-3 transition-colors hover:border-monad-purple/50"
+      className="block overflow-x-auto rounded-xl border bg-card px-4 py-3 transition-colors hover:border-ethereum-purple/50"
     >
       <div className="flex min-w-max items-center gap-3 whitespace-nowrap text-sm">
         <Badge variant={statusVariant[offer.status]}>
@@ -146,12 +146,12 @@ export function OfferListItem({ offer }: { offer: TradeOffer }) {
         </span>
         <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
           Maker gives:
-          <TradeSideInline nfts={makerNfts} mon={offer.makerMonAmount} />
+          <TradeSideInline nfts={makerNfts} eth={offer.makerEthAmount} />
         </span>
-        <ArrowLeftRight className="h-4 w-4 shrink-0 text-monad-purple" />
+        <ArrowLeftRight className="h-4 w-4 shrink-0 text-ethereum-purple" />
         <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
           Taker gives:
-          <TradeSideInline nfts={takerNfts} mon={offer.takerMonAmount} />
+          <TradeSideInline nfts={takerNfts} eth={offer.takerEthAmount} />
         </span>
         {showExpiry && (
           <span className="text-xs text-muted-foreground">
@@ -174,14 +174,14 @@ function PrivateBadge() {
 
 function TradeSide({
   nfts,
-  mon,
+  eth,
   label,
 }: {
   nfts: TradeOffer["nfts"];
-  mon: string;
+  eth: string;
   label: string;
 }) {
-  const monAmount = BigInt(mon);
+  const monAmount = BigInt(eth);
 
   return (
     <div>
@@ -197,8 +197,8 @@ function TradeSide({
         <p className="mt-1 text-xs text-foreground">+{nfts.length - 4} more</p>
       )}
       {monAmount > 0n && (
-        <p className="mt-1.5 text-sm font-semibold text-monad-purple">
-          {formatMon(monAmount)} MON
+        <p className="mt-1.5 text-sm font-semibold text-ethereum-purple">
+          {formatEth(monAmount)} ETH
         </p>
       )}
       {nfts.length === 0 && monAmount === 0n && (
@@ -210,12 +210,12 @@ function TradeSide({
 
 function TradeSideInline({
   nfts,
-  mon,
+  eth,
 }: {
   nfts: TradeOffer["nfts"];
-  mon: string;
+  eth: string;
 }) {
-  const monAmount = BigInt(mon);
+  const monAmount = BigInt(eth);
 
   if (nfts.length === 0 && monAmount === 0n) {
     return <span className="text-muted-foreground">Nothing</span>;
@@ -224,7 +224,7 @@ function TradeSideInline({
   return (
     <span className="inline-flex items-center gap-1.5">
       {monAmount > 0n && (
-        <AssetPill kind="mon">{formatMon(monAmount)} MON</AssetPill>
+        <AssetPill kind="eth">{formatEth(monAmount)} ETH</AssetPill>
       )}
       {nfts.slice(0, 2).map((nft) => (
         <AssetPill key={nft.id} kind="nft">
@@ -242,12 +242,12 @@ function AssetPill({
   kind,
   children,
 }: {
-  kind: "mon" | "nft";
+  kind: "eth" | "nft";
   children: ReactNode;
 }) {
   const className =
-    kind === "mon"
-      ? "border-monad-purple/40 bg-monad-purple/10 text-monad-purple"
+    kind === "eth"
+      ? "border-ethereum-purple/40 bg-ethereum-purple/10 text-ethereum-purple"
       : "border-cyan-400/40 bg-cyan-400/10 text-cyan-200";
 
   return (

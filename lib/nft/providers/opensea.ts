@@ -7,13 +7,13 @@ import type {
 } from "@/lib/nft/provider";
 
 /**
- * OpenSea API v2 provider. OpenSea indexes Monad mainnet natively.
- * Chain slug configurable via OPENSEA_CHAIN (default "monad").
+ * OpenSea API v2 provider. OpenSea indexes Ethereum mainnet natively.
+ * Chain slug configurable via OPENSEA_CHAIN (default "ethereum").
  */
 
 const OPENSEA_BASE_URL =
   process.env.OPENSEA_BASE_URL ?? "https://api.opensea.io/api/v2";
-const OPENSEA_CHAIN = process.env.OPENSEA_CHAIN ?? "monad";
+const OPENSEA_CHAIN = process.env.OPENSEA_CHAIN ?? "ethereum";
 
 async function fetchJson(path: string): Promise<any> {
   const key = process.env.OPENSEA_API_KEY;
@@ -171,7 +171,7 @@ export const openseaProvider: NFTProvider = {
       if (!slug) return null;
       const stats = await fetchJson(`/collections/${slug}/stats`);
       const floor = stats.total?.floor_price ?? null;
-      const currency = stats.total?.floor_price_symbol ?? "MON";
+      const currency = stats.total?.floor_price_symbol ?? "ETH";
       return {
         contractAddress: contractAddress.toLowerCase(),
         floorPrice: typeof floor === "number" ? floor : null,

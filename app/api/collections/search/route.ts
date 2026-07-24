@@ -4,7 +4,7 @@ import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 const OPENSEA_BASE_URL =
   process.env.OPENSEA_BASE_URL ?? "https://api.opensea.io/api/v2";
-const OPENSEA_CHAIN = process.env.OPENSEA_CHAIN ?? "monad";
+const OPENSEA_CHAIN = process.env.OPENSEA_CHAIN ?? "ethereum";
 const CACHE_TTL_MS = 60_000;
 const cache = new Map<
   string,

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { MONAD_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID, SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 import {
   creatorTokenAbi,
   erc721Abi,
@@ -62,7 +62,7 @@ export function useCollectionApprovals(contracts: string[]) {
         args: [owner as Address, SETTLEMENT_CONTRACT_ADDRESS] as const,
       }));
 
-      // Some Monad RPC providers either reject eth_call bundles or return a
+      // Some Ethereum RPC providers either reject eth_call bundles or return a
       // failed result for every item. Multicall is the fast path, but approval
       // verification must retain the individual-read behavior that works on
       // those providers; otherwise every NFT is incorrectly treated as
@@ -107,7 +107,7 @@ export function useCollectionApprovals(contracts: string[]) {
     };
   }, [query.data]);
 
-  return { ...query, stateFor, chainId: MONAD_CHAIN_ID };
+  return { ...query, stateFor, chainId: ETH_MAINNET_CHAIN_ID };
 }
 
 /**

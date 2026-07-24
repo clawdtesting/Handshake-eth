@@ -21,8 +21,8 @@ export interface CanonicalTerms {
   takerAddress: string;
   makerNFTs: CanonicalNFT[];
   takerNFTs: CanonicalNFT[];
-  makerMonAmount: string;
-  takerMonAmount: string;
+  makerEthAmount: string;
+  takerEthAmount: string;
   feeBps: number;
   flatFee: string;
   offerExpiry: number;
@@ -50,8 +50,8 @@ export function canonicalizeTerms(draft: DealRoomDraft): CanonicalTerms {
     takerAddress: draft.takerAddress.toLowerCase(),
     makerNFTs: canonicalNFTs(draft.makerNFTs),
     takerNFTs: canonicalNFTs(draft.takerNFTs),
-    makerMonAmount: BigInt(draft.makerMonAmount).toString(),
-    takerMonAmount: BigInt(draft.takerMonAmount).toString(),
+    makerEthAmount: BigInt(draft.makerEthAmount).toString(),
+    takerEthAmount: BigInt(draft.takerEthAmount).toString(),
     feeBps: draft.feeBps,
     flatFee: BigInt(draft.flatFee).toString(),
     offerExpiry: draft.offerExpiry,
@@ -71,8 +71,8 @@ export function canonicalJson(terms: CanonicalTerms): string {
       contractAddress: n.contractAddress,
       tokenId: n.tokenId,
     })),
-    makerMonAmount: terms.makerMonAmount,
-    takerMonAmount: terms.takerMonAmount,
+    makerEthAmount: terms.makerEthAmount,
+    takerEthAmount: terms.takerEthAmount,
     feeBps: terms.feeBps,
     flatFee: terms.flatFee,
     offerExpiry: terms.offerExpiry,

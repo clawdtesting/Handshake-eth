@@ -3,7 +3,7 @@ import { parseEther } from "viem";
 import { quoteFees } from "@/lib/fees";
 
 describe("fee math (must mirror Handshake.sol)", () => {
-  it("charges 1% on each MON leg by default", () => {
+  it("charges 1% on each ETH leg by default", () => {
     const q = quoteFees(parseEther("10"), parseEther("4"));
     expect(q.makerLegFee).toBe(parseEther("0.1"));
     expect(q.takerLegFee).toBe(parseEther("0.04"));
@@ -16,7 +16,7 @@ describe("fee math (must mirror Handshake.sol)", () => {
     expect(q.takerPays).toBe(0n);
   });
 
-  it("applies the flat swap fee only when no MON moves", () => {
+  it("applies the flat swap fee only when no ETH moves", () => {
     const flat = parseEther("0.05");
     expect(quoteFees(0n, 0n, 100n, flat).totalFee).toBe(flat);
     expect(quoteFees(parseEther("1"), 0n, 100n, flat).flatFee).toBe(0n);

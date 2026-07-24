@@ -15,20 +15,24 @@ export const settlementAbi = [
             name: "makerNFTs",
             type: "tuple[]",
             components: [
+              { name: "standard", type: "uint8" },
               { name: "contractAddress", type: "address" },
               { name: "tokenId", type: "uint256" },
+              { name: "amount", type: "uint256" },
             ],
           },
           {
             name: "takerNFTs",
             type: "tuple[]",
             components: [
+              { name: "standard", type: "uint8" },
               { name: "contractAddress", type: "address" },
               { name: "tokenId", type: "uint256" },
+              { name: "amount", type: "uint256" },
             ],
           },
-          { name: "makerMonAmount", type: "uint256" },
-          { name: "takerMonAmount", type: "uint256" },
+          { name: "makerEthAmount", type: "uint256" },
+          { name: "takerEthAmount", type: "uint256" },
           { name: "feeBps", type: "uint256" },
           { name: "flatFee", type: "uint256" },
           { name: "nonce", type: "uint256" },
@@ -106,12 +110,17 @@ export const settlementAbi = [
     outputs: [],
   },
   {
+    type: "function", name: "pendingRoyalties", stateMutability: "view",
+    inputs: [{ name: "", type: "address" }], outputs: [{ name: "", type: "uint256" }],
+  },
+  { type: "function", name: "withdrawRoyalties", stateMutability: "nonpayable", inputs: [], outputs: [] },
+  {
     type: "function",
     name: "quoteFees",
     stateMutability: "view",
     inputs: [
-      { name: "makerMonAmount", type: "uint256" },
-      { name: "takerMonAmount", type: "uint256" },
+      { name: "makerEthAmount", type: "uint256" },
+      { name: "takerEthAmount", type: "uint256" },
     ],
     outputs: [
       { name: "makerLegFee", type: "uint256" },
@@ -147,8 +156,8 @@ export const settlementAbi = [
       { name: "orderHash", type: "bytes32", indexed: true },
       { name: "maker", type: "address", indexed: true },
       { name: "taker", type: "address", indexed: true },
-      { name: "makerMonAmount", type: "uint256", indexed: false },
-      { name: "takerMonAmount", type: "uint256", indexed: false },
+      { name: "makerEthAmount", type: "uint256", indexed: false },
+      { name: "takerEthAmount", type: "uint256", indexed: false },
       { name: "protocolFee", type: "uint256", indexed: false },
     ],
   },
@@ -238,13 +247,13 @@ export const settlementErrorMessages: Record<string, string> = {
   SelfTrade: "You can't accept your own offer.",
   IncorrectPayment: "Payment amount doesn't match the required total.",
   InsufficientEscrow:
-    "The maker hasn't deposited enough MON escrow to fund their side yet.",
+    "The maker hasn't deposited enough ETH escrow to fund their side yet.",
   NotTokenOwner: "One of the NFTs is no longer owned by the expected wallet.",
   CollectionNotAllowed:
     "One of the collections in this trade isn't approved for trading on Handshake yet.",
   MissingApproval:
     "The maker hasn't approved the settlement contract for one of their NFTs yet. Ask them to open the offer and approve.",
-  NativeTransferFailed: "A MON transfer failed.",
+  NativeTransferFailed: "A ETH transfer failed.",
   TransferNotEffective:
     "The NFT collection reported a transfer, but ownership did not change.",
   ERC721InvalidReceiver:

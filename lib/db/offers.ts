@@ -1,5 +1,5 @@
 import { getServiceClient } from "@/lib/supabase/server";
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 import type { TradeOffer, TradeOfferNFT, WalletReputation } from "@/lib/types";
 
 function mapNft(row: any): TradeOfferNFT {
@@ -26,8 +26,8 @@ export function mapOffer(row: any): TradeOffer {
     makerAddress: row.maker_address,
     takerAddress: row.taker_address,
     status: row.status,
-    makerMonAmount: row.maker_mon_amount,
-    takerMonAmount: row.taker_mon_amount,
+    makerEthAmount: row.maker_mon_amount,
+    takerEthAmount: row.taker_mon_amount,
     feeBps: row.fee_bps,
     flatFee: row.flat_fee,
     nonce: row.nonce,
@@ -80,7 +80,7 @@ export async function listOffers(filters: {
     .from("trade_offers")
     .select(select)
     // Offers are chain-bound (EIP-712 domain); never mix networks.
-    .eq("chain_id", MONAD_CHAIN_ID)
+    .eq("chain_id", ETH_MAINNET_CHAIN_ID)
     .order("created_at", { ascending: false })
     .range(filters.offset, filters.offset + filters.limit - 1);
 

@@ -35,8 +35,8 @@ contract HandshakeAllowlistTest is Test {
         bytes32 indexed orderHash,
         address indexed maker,
         address indexed taker,
-        uint256 makerMonAmount,
-        uint256 takerMonAmount,
+        uint256 makerEthAmount,
+        uint256 takerEthAmount,
         uint256 protocolFee
     );
 
@@ -74,24 +74,24 @@ contract HandshakeAllowlistTest is Test {
     }
 
     /// @dev A single-item-per-side NFT<->NFT order, colA(TOKEN_A) for colB(TOKEN_B),
-    ///      with an optional maker MON leg funded from escrow.
-    function _order(uint256 makerMon, uint256 nonce)
+    ///      with an optional maker ETH leg funded from escrow.
+    function _order(uint256 makerEth, uint256 nonce)
         internal
         view
         returns (Handshake.TradeOrder memory order)
     {
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](1);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(colA), tokenId: TOKEN_A});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colA), tokenId: TOKEN_A, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(colB), tokenId: TOKEN_B});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colB), tokenId: TOKEN_B, amount: 1});
 
         order = Handshake.TradeOrder({
             maker: maker,
             taker: address(0), // open order
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: makerMon,
-            takerMonAmount: 0,
+            makerEthAmount: makerEth,
+            takerEthAmount: 0,
             feeBps: 100, // 1%
             flatFee: 0,
             nonce: nonce,
@@ -105,17 +105,17 @@ contract HandshakeAllowlistTest is Test {
         return abi.encodePacked(r, s, v);
     }
 
-    /// @dev Fund the maker's escrow with exactly the cost of a maker MON leg.
-    ///      No-op when the order has no maker MON leg (deposit() rejects zero).
-    function _fundMaker(uint256 makerMon) internal {
-        if (makerMon == 0) return;
-        uint256 makerCost = makerMon + (makerMon * 100) / 10_000; // + 1% maker-leg fee
+    /// @dev Fund the maker's escrow with exactly the cost of a maker ETH leg.
+    ///      No-op when the order has no maker ETH leg (deposit() rejects zero).
+    function _fundMaker(uint256 makerEth) internal {
+        if (makerEth == 0) return;
+        uint256 makerCost = makerEth + (makerEth * 100) / 10_000; // + 1% maker-leg fee
         vm.deal(maker, makerCost);
         vm.prank(maker);
         hs.deposit{value: makerCost}();
     }
 
-    /// @dev Solvency invariant across every account that can hold native MON here.
+    /// @dev Solvency invariant across every account that can hold native ETH here.
     function _assertSolvent() internal view {
         uint256 tracked = hs.escrowBalance(maker) + hs.escrowBalance(taker)
             + hs.escrowBalance(feeRecipient) + hs.pendingFees(feeRecipient);
@@ -130,16 +130,16 @@ contract HandshakeAllowlistTest is Test {
         _allowNow(address(colA));
         _allowNow(address(colB));
 
-        uint256 makerMon = 1 ether;
-        _fundMaker(makerMon);
+        uint256 makerEth = 1 ether;
+        _fundMaker(makerEth);
 
-        Handshake.TradeOrder memory order = _order(makerMon, 1);
+        Handshake.TradeOrder memory order = _order(makerEth, 1);
         bytes memory sig = _sign(order);
         bytes32 orderHash = hs.hashOrder(order);
-        uint256 expectedFee = (makerMon * 100) / 10_000; // maker-leg fee only
+        uint256 expectedFee = (makerEth * 100) / 10_000; // maker-leg fee only
 
         vm.expectEmit(true, true, true, true, address(hs));
-        emit TradeExecuted(orderHash, maker, taker, makerMon, 0, expectedFee);
+        emit TradeExecuted(orderHash, maker, taker, makerEth, 0, expectedFee);
 
         vm.prank(taker);
         hs.fulfillTrade(order, sig);
@@ -147,10 +147,10 @@ contract HandshakeAllowlistTest is Test {
         // NFTs actually moved.
         assertEq(colA.ownerOf(TOKEN_A), taker, "maker NFT should be taker's");
         assertEq(colB.ownerOf(TOKEN_B), maker, "taker NFT should be maker's");
-        // Fee accrued; maker MON forwarded to taker (an EOA that can receive).
+        // Fee accrued; maker ETH forwarded to taker (an EOA that can receive).
         assertEq(hs.pendingFees(feeRecipient), expectedFee, "fee accrual");
         assertEq(hs.escrowBalance(maker), 0, "maker escrow drained");
-        assertEq(taker.balance, makerMon, "taker received maker MON leg");
+        assertEq(taker.balance, makerEth, "taker received maker ETH leg");
         _assertSolvent();
     }
 
@@ -262,17 +262,17 @@ contract HandshakeAllowlistTest is Test {
         _fundMaker(0);
 
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](1);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(evil), tokenId: 7});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(evil), tokenId: 7, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(colB), tokenId: TOKEN_B});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colB), tokenId: TOKEN_B, amount: 1});
 
         Handshake.TradeOrder memory order = Handshake.TradeOrder({
             maker: maker,
             taker: address(0),
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: 0,
-            takerMonAmount: 0,
+            makerEthAmount: 0,
+            takerEthAmount: 0,
             feeBps: 100,
             flatFee: 0,
             nonce: 6,
@@ -429,18 +429,18 @@ contract HandshakeAllowlistTest is Test {
         _fundMaker(0);
 
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](2);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(colA), tokenId: TOKEN_A});
-        makerNFTs[1] = Handshake.NFTItem({contractAddress: address(colC), tokenId: tokenC});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colA), tokenId: TOKEN_A, amount: 1});
+        makerNFTs[1] = Handshake.NFTItem({standard: 0, contractAddress: address(colC), tokenId: tokenC, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(colB), tokenId: TOKEN_B});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(colB), tokenId: TOKEN_B, amount: 1});
 
         Handshake.TradeOrder memory order = Handshake.TradeOrder({
             maker: maker,
             taker: address(0),
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: 0,
-            takerMonAmount: 0,
+            makerEthAmount: 0,
+            takerEthAmount: 0,
             feeBps: 100,
             flatFee: 0,
             nonce: 11,

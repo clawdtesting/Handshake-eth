@@ -69,17 +69,17 @@ contract HandshakeUpgradeableRisk is Test {
 
     function _order(uint256 nonce) internal view returns (Handshake.TradeOrder memory order) {
         Handshake.NFTItem[] memory makerNFTs = new Handshake.NFTItem[](1);
-        makerNFTs[0] = Handshake.NFTItem({contractAddress: address(proxy), tokenId: PROXY_TOKEN});
+        makerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(proxy), tokenId: PROXY_TOKEN, amount: 1});
         Handshake.NFTItem[] memory takerNFTs = new Handshake.NFTItem[](1);
-        takerNFTs[0] = Handshake.NFTItem({contractAddress: address(realCol), tokenId: REAL_TOKEN});
+        takerNFTs[0] = Handshake.NFTItem({standard: 0, contractAddress: address(realCol), tokenId: REAL_TOKEN, amount: 1});
 
         order = Handshake.TradeOrder({
             maker: maker,
             taker: address(0),
             makerNFTs: makerNFTs,
             takerNFTs: takerNFTs,
-            makerMonAmount: 0,
-            takerMonAmount: 0,
+            makerEthAmount: 0,
+            takerEthAmount: 0,
             feeBps: 100,
             flatFee: 0,
             nonce: nonce,

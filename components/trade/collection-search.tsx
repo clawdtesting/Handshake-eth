@@ -16,7 +16,7 @@ const clientCache = new Map<string, CollectionSearchResult[]>();
 
 function chainLabel(chain?: string | null) {
   if (!chain) return "Unknown chain";
-  return chain.toLowerCase() === "monad" ? "Monad" : chain;
+  return chain.toLowerCase() === "ethereum" ? "Ethereum" : chain;
 }
 
 function shortAddress(address?: string | null) {
@@ -96,7 +96,7 @@ export function CollectionSearch({ onSelect, selected, minLength = 2 }: Props) {
   }, [canSearch, minLength, trimmed]);
 
   return (
-    <div className="space-y-2 rounded-xl border border-monad-purple/25 bg-monad-purple/5 p-3">
+    <div className="space-y-2 rounded-xl border border-ethereum-purple/25 bg-ethereum-purple/5 p-3">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -106,7 +106,7 @@ export function CollectionSearch({ onSelect, selected, minLength = 2 }: Props) {
           onChange={(e) => setQuery(e.target.value)}
         />
         {loading && (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-monad-purple" />
+          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-ethereum-purple" />
         )}
       </div>
 
@@ -138,7 +138,7 @@ export function CollectionSearch({ onSelect, selected, minLength = 2 }: Props) {
               key={`${collection.slug}:${collection.contractAddress ?? "pending"}`}
               type="button"
               onClick={() => onSelect(collection)}
-              className="flex w-full items-center gap-3 border-b border-border/70 p-3 text-left transition-colors last:border-b-0 hover:bg-monad-purple/10"
+              className="flex w-full items-center gap-3 border-b border-border/70 p-3 text-left transition-colors last:border-b-0 hover:bg-ethereum-purple/10"
             >
               <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-border bg-secondary">
                 {collection.imageUrl ? (

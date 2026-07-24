@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 import type { CollectionMetadata } from "@/lib/nft/collection-metadata";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +14,7 @@ async function fetchMetadata(address: string, chainId: number) {
   return json.metadata;
 }
 
-export function useCollectionMetadata(collectionAddress?: string | null, chainId = MONAD_CHAIN_ID) {
+export function useCollectionMetadata(collectionAddress?: string | null, chainId = ETH_MAINNET_CHAIN_ID) {
   const address = collectionAddress?.toLowerCase();
   return useQuery({
     queryKey: ["collection-metadata", chainId, address],
@@ -27,7 +27,7 @@ export function useCollectionMetadata(collectionAddress?: string | null, chainId
 
 export function SafeCollectionImage({
   collectionAddress,
-  chainId = MONAD_CHAIN_ID,
+  chainId = ETH_MAINNET_CHAIN_ID,
   alt,
   className,
   fallbackSrc = "/Logomark.png",

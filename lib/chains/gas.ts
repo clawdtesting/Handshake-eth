@@ -1,7 +1,7 @@
 import type { PublicClient } from "viem";
 
 /**
- * Estimate gas for a contract write and add headroom. Some Monad RPC nodes
+ * Estimate gas for a contract write and add headroom. Some Ethereum RPC nodes
  * reject transactions whose gas limit is merely estimate-tight with
  * "Gas limit too low", so we pad the estimate by 50%. Returns undefined on
  * estimation failure so the caller can fall back to the wallet's own default

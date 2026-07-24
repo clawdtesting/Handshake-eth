@@ -184,7 +184,7 @@ export default function WantedPage() {
               </select>
             </label>
             <Input
-              placeholder="Deal offer… (e.g. 25 MON or 10kSquad #123)"
+              placeholder="Deal offer… (e.g. 25 ETH or 10kSquad #123)"
               value={offering}
               maxLength={280}
               onChange={(e) => setOffering(e.target.value)}
@@ -250,7 +250,7 @@ export default function WantedPage() {
                       </span>
                     </div>
                     <p className="font-medium">
-                      <span className="text-monad-purple">Looking for:</span>{" "}
+                      <span className="text-ethereum-purple">Looking for:</span>{" "}
                       {post.lookingFor}
                     </p>
                     {post.offering && (

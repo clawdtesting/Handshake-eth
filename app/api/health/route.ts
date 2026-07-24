@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { publicClient } from "@/lib/chains/client";
 import {
-  MONAD_CHAIN_ID,
+  ETH_MAINNET_CHAIN_ID,
   SETTLEMENT_CONTRACT_ADDRESS,
-} from "@/lib/chains/monad";
+} from "@/lib/chains/ethereum";
 import { getServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,7 @@ export async function GET() {
 
   try {
     const chainId = await publicClient.getChainId();
-    checks.chainMatches = chainId === MONAD_CHAIN_ID;
+    checks.chainMatches = chainId === ETH_MAINNET_CHAIN_ID;
   } catch {
     checks.chainMatches = false;
   }
@@ -51,7 +51,7 @@ export async function GET() {
 
   const healthy = Object.values(checks).every(Boolean);
   return NextResponse.json(
-    { healthy, chainId: MONAD_CHAIN_ID, checks },
+    { healthy, chainId: ETH_MAINNET_CHAIN_ID, checks },
     { status: healthy ? 200 : 503 }
   );
 }

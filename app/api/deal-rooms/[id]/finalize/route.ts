@@ -30,7 +30,7 @@ import {
   type TradeOrder,
 } from "@/lib/orders/eip712";
 import { publicClient } from "@/lib/chains/client";
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 import type { DealRoomDraft, RevisionNFT } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -141,8 +141,8 @@ export async function POST(
       takerNFTs: input.order.takerNFTs.map(
         (n): RevisionNFT => ({ ...n, side: "taker" })
       ),
-      makerMonAmount: input.order.makerMonAmount,
-      takerMonAmount: input.order.takerMonAmount,
+      makerEthAmount: input.order.makerEthAmount,
+      takerEthAmount: input.order.takerEthAmount,
       feeBps: Number(input.order.feeBps),
       flatFee: input.order.flatFee,
       offerExpiry: Number(input.order.expiry),
@@ -174,15 +174,19 @@ export async function POST(
       maker: input.order.maker.toLowerCase() as Address,
       taker: input.order.taker.toLowerCase() as Address,
       makerNFTs: input.order.makerNFTs.map((n) => ({
-        contractAddress: n.contractAddress.toLowerCase() as Address,
+        standard: 0 as const,
+          amount: 1n,
+          contractAddress: n.contractAddress.toLowerCase() as Address,
         tokenId: BigInt(n.tokenId),
       })),
       takerNFTs: input.order.takerNFTs.map((n) => ({
-        contractAddress: n.contractAddress.toLowerCase() as Address,
+        standard: 0 as const,
+          amount: 1n,
+          contractAddress: n.contractAddress.toLowerCase() as Address,
         tokenId: BigInt(n.tokenId),
       })),
-      makerMonAmount: BigInt(input.order.makerMonAmount),
-      takerMonAmount: BigInt(input.order.takerMonAmount),
+      makerEthAmount: BigInt(input.order.makerEthAmount),
+      takerEthAmount: BigInt(input.order.takerEthAmount),
       feeBps: BigInt(input.order.feeBps),
       flatFee: BigInt(input.order.flatFee),
       nonce: BigInt(input.order.nonce),
@@ -212,12 +216,12 @@ export async function POST(
     const { data: offerRow, error } = await db
       .from("trade_offers")
       .insert({
-        chain_id: MONAD_CHAIN_ID,
+        chain_id: ETH_MAINNET_CHAIN_ID,
         maker_address: order.maker,
         taker_address: taker,
         status: "open",
-        maker_mon_amount: input.order.makerMonAmount,
-        taker_mon_amount: input.order.takerMonAmount,
+        maker_mon_amount: input.order.makerEthAmount,
+        taker_mon_amount: input.order.takerEthAmount,
         fee_bps: Number(input.order.feeBps),
         flat_fee: input.order.flatFee,
         nonce: input.order.nonce,

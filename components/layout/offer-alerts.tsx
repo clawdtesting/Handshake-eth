@@ -9,7 +9,7 @@ import type { TradeOffer } from "@/lib/types";
 import { useNotifications } from "@/hooks/use-deal-rooms";
 import { cn } from "@/lib/utils";
 
-const STATE_KEY_PREFIX = "monad-market-notification-states";
+const STATE_KEY_PREFIX = "ethereum-market-notification-states";
 
 type NotificationState = "unread" | "read" | "dismissed";
 type NotificationStateMap = Record<string, NotificationState>;
@@ -70,8 +70,8 @@ function getOfferSummary(offer: TradeOffer) {
 
   if (makerNfts > 0) pieces.push(`${makerNfts} NFT${makerNfts === 1 ? "" : "s"} offered`);
   if (takerNfts > 0) pieces.push(`${takerNfts} NFT${takerNfts === 1 ? "" : "s"} requested`);
-  if (offer.makerMonAmount !== "0") pieces.push("MON included by maker");
-  if (offer.takerMonAmount !== "0") pieces.push("MON requested from you");
+  if (offer.makerEthAmount !== "0") pieces.push("ETH included by maker");
+  if (offer.takerEthAmount !== "0") pieces.push("ETH requested from you");
 
   return pieces.length > 0 ? pieces.join(" · ") : "A wallet-to-wallet trade is waiting for your review.";
 }
@@ -198,15 +198,15 @@ export function OfferAlerts() {
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-monad-purple px-1 text-[10px] font-bold text-monad-black">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ethereum-purple px-1 text-[10px] font-bold text-ethereum-black">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="fixed inset-x-4 top-16 z-50 overflow-hidden rounded-2xl border border-monad-purple/25 bg-background/95 shadow-2xl shadow-monad-purple/15 backdrop-blur md:absolute md:inset-x-auto md:right-0 md:top-11 md:w-96">
-          <div className="flex items-center justify-between border-b border-monad-purple/15 px-4 py-3">
+        <div className="fixed inset-x-4 top-16 z-50 overflow-hidden rounded-2xl border border-ethereum-purple/25 bg-background/95 shadow-2xl shadow-ethereum-purple/15 backdrop-blur md:absolute md:inset-x-auto md:right-0 md:top-11 md:w-96">
+          <div className="flex items-center justify-between border-b border-ethereum-purple/15 px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-foreground">Notifications</p>
               <p className="text-xs text-muted-foreground">
@@ -224,7 +224,7 @@ export function OfferAlerts() {
                     "read"
                   )
                 }
-                className="rounded-full border border-monad-purple/30 px-3 py-1 text-xs font-medium text-monad-purple transition-colors hover:bg-monad-purple/10"
+                className="rounded-full border border-ethereum-purple/30 px-3 py-1 text-xs font-medium text-ethereum-purple transition-colors hover:bg-ethereum-purple/10"
               >
                 Mark all as read
               </button>
@@ -245,7 +245,7 @@ export function OfferAlerts() {
                       className={cn(
                         "rounded-xl border p-3 transition-colors",
                         notification.state === "unread"
-                          ? "border-monad-purple/35 bg-monad-purple/10"
+                          ? "border-ethereum-purple/35 bg-ethereum-purple/10"
                           : "border-border/60 bg-secondary/25"
                       )}
                     >
@@ -253,7 +253,7 @@ export function OfferAlerts() {
                         <span
                           className={cn(
                             "mt-1 h-2 w-2 shrink-0 rounded-full",
-                            notification.state === "unread" ? "bg-monad-purple" : "bg-muted-foreground/35"
+                            notification.state === "unread" ? "bg-ethereum-purple" : "bg-muted-foreground/35"
                           )}
                         />
                         <div className="min-w-0 flex-1">
@@ -272,7 +272,7 @@ export function OfferAlerts() {
                             <Link
                               href={notification.actionHref}
                               onClick={() => updateNotificationState([notification.id], "read")}
-                              className="inline-flex items-center gap-1 rounded-full bg-monad-purple px-3 py-1.5 text-xs font-semibold text-monad-black transition-opacity hover:opacity-90"
+                              className="inline-flex items-center gap-1 rounded-full bg-ethereum-purple px-3 py-1.5 text-xs font-semibold text-ethereum-black transition-opacity hover:opacity-90"
                             >
                               {notification.actionLabel}
                               <ExternalLink className="h-3 w-3" />

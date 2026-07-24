@@ -6,9 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function WhyHandshakePage() {
   return (
     <div className="container mx-auto px-4 py-12">
-      <section className="relative overflow-hidden rounded-[2rem] border border-monad-purple/20 bg-gradient-to-br from-monad-purple/15 via-fuchsia-500/10 to-cyan-400/10 px-5 py-14 shadow-2xl shadow-monad-purple/10 md:px-8">
+      <section className="relative overflow-hidden rounded-[2rem] border border-ethereum-purple/20 bg-gradient-to-br from-ethereum-purple/15 via-fuchsia-500/10 to-cyan-400/10 px-5 py-14 shadow-2xl shadow-ethereum-purple/10 md:px-8">
         <div className="pointer-events-none absolute right-10 top-8 h-28 w-28 rounded-full bg-fuchsia-400/20 blur-2xl" />
-        <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-monad-purple/30 bg-monad-purple/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-monad-purple">
+        <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-ethereum-purple/30 bg-ethereum-purple/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-ethereum-purple">
           <Handshake className="h-3.5 w-3.5" /> About Handshake
         </p>
         <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">
@@ -36,7 +36,7 @@ export default function WhyHandshakePage() {
           icon={<ShieldCheck className="h-5 w-5" />}
           title="How Handshake Works"
           points={[
-            "Step 1: Propose a Deal with NFTs, MON, or both.",
+            "Step 1: Propose a Deal with NFTs, ETH, or both.",
             "Step 2: Share it publicly on the Market or privately with a wallet.",
             "Step 3: Another collector reviews and accepts the deal.",
             "Step 4: Atomic settlement executes the trade in one transaction: everything swaps or nothing does.",
@@ -55,12 +55,12 @@ export default function WhyHandshakePage() {
         />
         <InfoCard
           icon={<Zap className="h-5 w-5" />}
-          title="Why Monad"
+          title="Why Ethereum"
           points={[
             "Fast settlement keeps accepted deals feeling responsive.",
             "Lower-cost execution makes negotiation and settlement friendlier for collectors.",
             "EVM compatibility lets traders keep familiar wallets and smart contract patterns.",
-            "Monad is the infrastructure advantage; Handshake remains focused on human-to-human NFT deals.",
+            "Ethereum is the infrastructure advantage; Handshake remains focused on human-to-human NFT deals.",
           ]}
         />
       </div>
@@ -68,13 +68,13 @@ export default function WhyHandshakePage() {
       <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Link
           href="/create"
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-monad-purple to-fuchsia-400 px-8 text-base font-medium text-primary-foreground shadow-lg shadow-monad-purple/20 transition-colors hover:from-monad-purple/90 hover:to-fuchsia-400/90"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-gradient-to-r from-ethereum-purple to-fuchsia-400 px-8 text-base font-medium text-primary-foreground shadow-lg shadow-ethereum-purple/20 transition-colors hover:from-ethereum-purple/90 hover:to-fuchsia-400/90"
         >
           Propose a Deal <ArrowRight className="h-4 w-4" />
         </Link>
         <Link
           href="/"
-          className="inline-flex h-12 items-center justify-center rounded-md border border-monad-purple/50 px-8 text-base font-medium text-foreground transition-colors hover:bg-monad-purple/10"
+          className="inline-flex h-12 items-center justify-center rounded-md border border-ethereum-purple/50 px-8 text-base font-medium text-foreground transition-colors hover:bg-ethereum-purple/10"
         >
           Browse the Market
         </Link>
@@ -93,16 +93,16 @@ function InfoCard({
   points: string[];
 }) {
   return (
-    <Card className="border-monad-purple/20 bg-card/60 backdrop-blur transition-all hover:-translate-y-1 hover:border-monad-purple/50 hover:shadow-2xl hover:shadow-monad-purple/15">
+    <Card className="border-ethereum-purple/20 bg-card/60 backdrop-blur transition-all hover:-translate-y-1 hover:border-ethereum-purple/50 hover:shadow-2xl hover:shadow-ethereum-purple/15">
       <CardContent className="p-6">
-        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-monad-purple/15 text-monad-purple">
+        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-ethereum-purple/15 text-ethereum-purple">
           {icon}
         </div>
         <h2 className="mb-4 text-xl font-semibold text-foreground">{title}</h2>
         <ul className="space-y-3 text-sm leading-6 text-foreground/85">
           {points.map((point) => (
             <li key={point} className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-monad-purple" />
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ethereum-purple" />
               <span>{point}</span>
             </li>
           ))}

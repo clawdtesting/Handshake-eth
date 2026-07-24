@@ -19,15 +19,15 @@ import { useDealHealth } from "@/hooks/use-deal-health";
 import {
   explorerTokenUrl,
   explorerTxUrl,
-  MONAD_CHAIN_ID,
+  ETH_MAINNET_CHAIN_ID,
   SETTLEMENT_CONTRACT_ADDRESS,
-} from "@/lib/chains/monad";
+} from "@/lib/chains/ethereum";
 import { erc721Abi, settlementAbi } from "@/lib/contracts/settlement";
 import { runWrite } from "@/lib/chains/tx";
 import { ZERO_ADDRESS } from "@/lib/orders/eip712";
 import { isCollectionBid } from "@/lib/collection-bids";
 import { quoteFees } from "@/lib/fees";
-import { formatMon, rarityRankBadgeClass, shortAddress, timeUntil } from "@/lib/utils";
+import { formatEth, rarityRankBadgeClass, shortAddress, timeUntil } from "@/lib/utils";
 import type { TradeOffer } from "@/lib/types";
 
 const statusVariant = {
@@ -98,7 +98,7 @@ export default function OfferDetailPage({
       !!offer &&
       !!publicClient &&
       offer.status === "open" &&
-      BigInt(offer.makerMonAmount) > 0n,
+      BigInt(offer.makerEthAmount) > 0n,
     queryFn: async () => {
       const balance = await publicClient!.readContract({
         address: SETTLEMENT_CONTRACT_ADDRESS,
@@ -108,7 +108,7 @@ export default function OfferDetailPage({
       });
 
       const required = quoteFees(
-        BigInt(offer!.makerMonAmount),
+        BigInt(offer!.makerEthAmount),
         0n,
         BigInt(offer!.feeBps)
       ).makerEscrowRequired;
@@ -140,14 +140,14 @@ export default function OfferDetailPage({
 
   const makerNfts = offer.nfts.filter((n) => n.side === "maker");
   const takerNfts = offer.nfts.filter((n) => n.side === "taker");
-  const makerMon = BigInt(offer.makerMonAmount);
-  const takerMon = BigInt(offer.takerMonAmount);
+  const makerEth = BigInt(offer.makerEthAmount);
+  const takerEth = BigInt(offer.takerEthAmount);
   const connectedAddress = address?.toLowerCase();
   const expectedProceeds =
     connectedAddress === offer.makerAddress.toLowerCase()
-      ? takerMon
+      ? takerEth
       : connectedAddress === (offer.takerAddress ?? "").toLowerCase()
-        ? makerMon
+        ? makerEth
         : 0n;
   const claimableProceeds =
     offer.status === "completed" && expectedProceeds > 0n
@@ -161,11 +161,11 @@ export default function OfferDetailPage({
     !offer.takerAddress || address?.toLowerCase() === offer.takerAddress.toLowerCase();
   const isExpired = offer.expiry * 1000 < Date.now();
   const offerChainId = Number(offer.chainId);
-  const isWrongOfferChain = offerChainId !== MONAD_CHAIN_ID;
-  const isWrongWalletChain = !!address && chainId !== MONAD_CHAIN_ID;
+  const isWrongOfferChain = offerChainId !== ETH_MAINNET_CHAIN_ID;
+  const isWrongWalletChain = !!address && chainId !== ETH_MAINNET_CHAIN_ID;
   const takerFeeQuote = quoteFees(
-    makerMon,
-    takerMon,
+    makerEth,
+    takerEth,
     BigInt(offer.feeBps),
     BigInt(offer.flatFee)
   );
@@ -200,8 +200,8 @@ export default function OfferDetailPage({
           contractAddress: n.contractAddress as Address,
           tokenId: BigInt(n.tokenId),
         })),
-      makerMonAmount: BigInt(o.makerMonAmount),
-      takerMonAmount: BigInt(o.takerMonAmount),
+      makerEthAmount: BigInt(o.makerEthAmount),
+      takerEthAmount: BigInt(o.takerEthAmount),
       feeBps: BigInt(o.feeBps),
       flatFee: BigInt(o.flatFee),
       nonce: BigInt(o.nonce),
@@ -240,7 +240,7 @@ export default function OfferDetailPage({
           writeContractAsync,
           account: address,
           walletChainId: chainId,
-          expectedChainId: MONAD_CHAIN_ID,
+          expectedChainId: ETH_MAINNET_CHAIN_ID,
           label: `Approve ${shortAddress(contract)}`,
           address: contract as Address,
           abi: erc721Abi,
@@ -261,7 +261,7 @@ export default function OfferDetailPage({
         writeContractAsync,
         account: address,
         walletChainId: chainId,
-        expectedChainId: MONAD_CHAIN_ID,
+        expectedChainId: ETH_MAINNET_CHAIN_ID,
         label: "Deposit escrow",
         address: SETTLEMENT_CONTRACT_ADDRESS,
         abi: settlementAbi,
@@ -307,7 +307,7 @@ export default function OfferDetailPage({
         writeContractAsync,
         account: address,
         walletChainId: chainId,
-        expectedChainId: MONAD_CHAIN_ID,
+        expectedChainId: ETH_MAINNET_CHAIN_ID,
         label: "Accept deal",
         address: SETTLEMENT_CONTRACT_ADDRESS,
         abi: settlementAbi,
@@ -329,7 +329,7 @@ export default function OfferDetailPage({
       }
 
       toast.success(
-        "Handshake completed 🎉 MON proceeds are now withdrawable from escrow."
+        "Handshake completed 🎉 ETH proceeds are now withdrawable from escrow."
       );
       refreshAfterTx();
     } catch (err: any) {
@@ -349,7 +349,7 @@ export default function OfferDetailPage({
         writeContractAsync,
         account: address,
         walletChainId: chainId,
-        expectedChainId: MONAD_CHAIN_ID,
+        expectedChainId: ETH_MAINNET_CHAIN_ID,
         label: "Claim proceeds",
         address: SETTLEMENT_CONTRACT_ADDRESS,
         abi: settlementAbi,
@@ -357,7 +357,7 @@ export default function OfferDetailPage({
         args: [claimableProceeds],
         onSubmitted: () => toast.info("Claiming proceeds…"),
       });
-      toast.success(`Claimed ${formatMon(claimableProceeds)} MON proceeds`);
+      toast.success(`Claimed ${formatEth(claimableProceeds)} ETH proceeds`);
       proceedsQuery.refetch();
       queryClient.invalidateQueries({ queryKey: ["escrow-balance"] });
     } catch (err: any) {
@@ -377,7 +377,7 @@ export default function OfferDetailPage({
         writeContractAsync,
         account: address,
         walletChainId: chainId,
-        expectedChainId: MONAD_CHAIN_ID,
+        expectedChainId: ETH_MAINNET_CHAIN_ID,
         label: "Cancel deal",
         address: SETTLEMENT_CONTRACT_ADDRESS,
         abi: settlementAbi,
@@ -429,7 +429,7 @@ export default function OfferDetailPage({
         {offer.dealRoomId && (
           <a
             href={`/rooms/${offer.dealRoomId}`}
-            className="inline-flex items-center rounded-full border border-monad-purple/30 bg-monad-purple/10 px-2.5 py-0.5 text-xs font-medium text-monad-purple hover:bg-monad-purple/20"
+            className="inline-flex items-center rounded-full border border-ethereum-purple/30 bg-ethereum-purple/10 px-2.5 py-0.5 text-xs font-medium text-ethereum-purple hover:bg-ethereum-purple/20"
           >
             🤝 Negotiated in a Deal Room
           </a>
@@ -446,10 +446,10 @@ export default function OfferDetailPage({
           <SideCard
             title={`Maker gives — ${shortAddress(offer.makerAddress)}`}
             nfts={makerNfts}
-            mon={makerMon}
+            eth={makerEth}
           />
           <div className="flex justify-center pt-10">
-            <ArrowLeftRight className="h-6 w-6 text-monad-purple" />
+            <ArrowLeftRight className="h-6 w-6 text-ethereum-purple" />
           </div>
           <SideCard
             title={
@@ -458,14 +458,14 @@ export default function OfferDetailPage({
                 : "Taker gives — anyone"
             }
             nfts={takerNfts}
-            mon={takerMon}
+            eth={takerEth}
           />
         </div>
 
         <div className="space-y-4">
           <FeeBreakdown
-            makerMonAmount={makerMon}
-            takerMonAmount={takerMon}
+            makerEthAmount={makerEth}
+            takerEthAmount={takerEth}
             feeBps={BigInt(offer.feeBps)}
             flatSwapFee={BigInt(offer.flatFee)}
           />
@@ -506,7 +506,7 @@ export default function OfferDetailPage({
                   </>
                 ) : (
                   takerFeeQuote.takerPays > 0n
-                    ? `Accept & pay ${formatMon(takerFeeQuote.takerPays)} MON`
+                    ? `Accept & pay ${formatEth(takerFeeQuote.takerPays)} ETH`
                     : "Accept Deal"
                 )}
               </Button>
@@ -515,9 +515,9 @@ export default function OfferDetailPage({
                   {isExpired
                     ? "This deal has expired and can no longer be accepted."
                     : isWrongOfferChain
-                      ? `This deal was signed for chain ${offerChainId} and can't be settled on chain ${MONAD_CHAIN_ID}.`
+                      ? `This deal was signed for chain ${offerChainId} and can't be settled on chain ${ETH_MAINNET_CHAIN_ID}.`
                       : isWrongWalletChain
-                        ? `Switch your wallet to Monad (chain ${MONAD_CHAIN_ID}) to accept and pay for this deal.`
+                        ? `Switch your wallet to Ethereum (chain ${ETH_MAINNET_CHAIN_ID}) to accept and pay for this deal.`
                         : "This deal can't be accepted right now."}
                 </p>
               )}
@@ -540,9 +540,9 @@ export default function OfferDetailPage({
             )}
 
           {hasCollectionBid && offer.status === "open" && !isMaker && (
-            <div className="space-y-3 rounded-lg border border-monad-purple/30 bg-monad-purple/10 p-3 text-sm text-foreground">
+            <div className="space-y-3 rounded-lg border border-ethereum-purple/30 bg-ethereum-purple/10 p-3 text-sm text-foreground">
               <p>
-                This is a collection-wide buy deal. The maker is offering MON
+                This is a collection-wide buy deal. The maker is offering ETH
                 for any matching NFT in the requested collection, so choose one
                 of your NFTs and send them a private deal to complete the
                 handshake.
@@ -561,8 +561,8 @@ export default function OfferDetailPage({
             escrowQuery.data.shortfall > 0n && (
               <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
                 <p>
-                  This deal needs {formatMon(escrowQuery.data.required)} MON in
-                  maker escrow ({formatMon(escrowQuery.data.balance)} funded).
+                  This deal needs {formatEth(escrowQuery.data.required)} ETH in
+                  maker escrow ({formatEth(escrowQuery.data.balance)} funded).
                   {!isMaker && " It can't be accepted until the maker deposits."}
                 </p>
                 {isMaker && (
@@ -576,7 +576,7 @@ export default function OfferDetailPage({
                         <Loader2 className="h-4 w-4 animate-spin" /> Depositing…
                       </>
                     ) : (
-                      `Deposit ${formatMon(escrowQuery.data.shortfall)} MON escrow`
+                      `Deposit ${formatEth(escrowQuery.data.shortfall)} ETH escrow`
                     )}
                   </Button>
                 )}
@@ -628,7 +628,7 @@ export default function OfferDetailPage({
           {isWrongOfferChain && (
             <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
               This deal was signed for chain {offer.chainId} and can&apos;t be
-              settled on chain {MONAD_CHAIN_ID}.
+              settled on chain {ETH_MAINNET_CHAIN_ID}.
             </p>
           )}
 
@@ -639,15 +639,15 @@ export default function OfferDetailPage({
           )}
 
           {offer.status === "completed" && expectedProceeds > 0n && address && (
-            <div className="space-y-3 rounded-lg border border-monad-purple/30 bg-monad-purple/10 p-3 text-sm text-foreground">
+            <div className="space-y-3 rounded-lg border border-ethereum-purple/30 bg-ethereum-purple/10 p-3 text-sm text-foreground">
               <div className="space-y-1">
-                <p className="font-semibold text-monad-purple">
+                <p className="font-semibold text-ethereum-purple">
                   Claim sale proceeds
                 </p>
                 <p className="text-muted-foreground">
-                  Settlement credited {formatMon(expectedProceeds)} MON to your
+                  Settlement credited {formatEth(expectedProceeds)} ETH to your
                   withdrawable escrow balance instead of sending a direct wallet
-                  transfer. Claim it here when you want the MON in your wallet.
+                  transfer. Claim it here when you want the ETH in your wallet.
                 </p>
               </div>
               {claimableProceeds > 0n ? (
@@ -661,7 +661,7 @@ export default function OfferDetailPage({
                       <Loader2 className="h-4 w-4 animate-spin" /> Claiming…
                     </>
                   ) : (
-                    `Claim ${formatMon(claimableProceeds)} MON proceeds`
+                    `Claim ${formatEth(claimableProceeds)} ETH proceeds`
                   )}
                 </Button>
               ) : (
@@ -689,11 +689,11 @@ export default function OfferDetailPage({
 function SideCard({
   title,
   nfts,
-  mon,
+  eth,
 }: {
   title: string;
   nfts: TradeOffer["nfts"];
-  mon: bigint;
+  eth: bigint;
 }) {
   return (
     <Card>
@@ -715,7 +715,7 @@ function SideCard({
                     href={explorerTokenUrl(nft.contractAddress, nft.tokenId)}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-monad-purple"
+                    className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-ethereum-purple"
                     title={nft.contractAddress}
                   >
                     {shortAddress(nft.contractAddress)}
@@ -729,9 +729,9 @@ function SideCard({
           <p className="text-sm text-muted-foreground">No NFTs</p>
         )}
 
-        {mon > 0n && (
-          <p className="text-lg font-semibold text-monad-purple">
-            + {formatMon(mon)} MON
+        {eth > 0n && (
+          <p className="text-lg font-semibold text-ethereum-purple">
+            + {formatEth(eth)} ETH
           </p>
         )}
       </CardContent>
@@ -745,7 +745,7 @@ function TxLink({ label, hash }: { label: string; hash: string }) {
       href={explorerTxUrl(hash)}
       target="_blank"
       rel="noreferrer"
-      className="flex items-center gap-1.5 text-sm text-monad-purple hover:underline"
+      className="flex items-center gap-1.5 text-sm text-ethereum-purple hover:underline"
     >
       {label} <ExternalLink className="h-3.5 w-3.5" />
     </a>

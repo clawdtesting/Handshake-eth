@@ -23,7 +23,7 @@ export interface CollectionPrice {
   contractAddress: string;
   floorPrice: number | null; // lowest listing (ask)
   topOffer: number | null; // highest collection-wide bid
-  currency: string; // e.g. "MON" / "WMON"
+  currency: string; // e.g. "ETH" / "WMON"
 }
 
 export interface NFTProvider {

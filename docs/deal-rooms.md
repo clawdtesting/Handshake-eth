@@ -14,7 +14,7 @@ take-it-or-leave-it: the counterparty could accept or walk away. Wanting
 slightly different terms meant leaving for Discord DMs — losing the trade,
 the trust, and the story. Deal Rooms close that loop: negotiation happens
 in-product, every round is structured, and the finale is a sub-second atomic
-settlement on Monad.
+settlement on Ethereum.
 
 ## Security model (the one rule)
 
@@ -87,7 +87,7 @@ load-bearing.
 1. **Enter** from an offer ("Suggest changes"), the wanted board ("Haggle
    live"), or `/rooms/new` with any wallet.
 2. **Haggle**: counter with the composer (both wallets' live inventories,
-   MON amounts, expiry, 240-char note). Delta chips show exactly what each
+   ETH amounts, expiry, 240-char note). Delta chips show exactly what each
    round changes. Identical re-proposals are rejected.
 3. **Agree**: acceptance is per-revision; when both sides accept the same
    hash the room locks to `agreed`.

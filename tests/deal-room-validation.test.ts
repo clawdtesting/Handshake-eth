@@ -16,8 +16,8 @@ const validDraft = {
   takerAddress: B,
   makerNFTs: [{ contractAddress: C, tokenId: "1" }],
   takerNFTs: [],
-  makerMonAmount: "0",
-  takerMonAmount: "1000",
+  makerEthAmount: "0",
+  takerEthAmount: "1000",
   feeBps: 100,
   flatFee: "0",
   offerExpiry: FUTURE,
@@ -39,14 +39,14 @@ describe("draftSchema", () => {
       draftSchema.safeParse({
         ...validDraft,
         makerNFTs: [],
-        makerMonAmount: "0",
+        makerEthAmount: "0",
       }).success
     ).toBe(false);
     expect(
       draftSchema.safeParse({
         ...validDraft,
         takerNFTs: [],
-        takerMonAmount: "0",
+        takerEthAmount: "0",
       }).success
     ).toBe(false);
   });
@@ -84,7 +84,7 @@ describe("draftSchema", () => {
 
 describe("createRoomSchema", () => {
   const base = {
-    chainId: 143,
+    chainId: 1,
     counterparty: B,
     draft: validDraft,
   };
@@ -136,8 +136,8 @@ describe("finalizeSchema", () => {
     taker: B,
     makerNFTs: [{ contractAddress: C, tokenId: "1" }],
     takerNFTs: [],
-    makerMonAmount: "0",
-    takerMonAmount: "1000",
+    makerEthAmount: "0",
+    takerEthAmount: "1000",
     feeBps: "100",
     flatFee: "0",
     nonce: "123456789",

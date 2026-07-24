@@ -13,7 +13,7 @@ import {
   type TradeOrder,
 } from "@/lib/orders/eip712";
 import { publicClient } from "@/lib/chains/client";
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -64,9 +64,9 @@ export async function POST(req: Request) {
   }
   const input = parsed.data;
 
-  if (input.chainId !== MONAD_CHAIN_ID) {
+  if (input.chainId !== ETH_MAINNET_CHAIN_ID) {
     return NextResponse.json(
-      { error: `Wrong chain. Expected ${MONAD_CHAIN_ID}` },
+      { error: `Wrong chain. Expected ${ETH_MAINNET_CHAIN_ID}` },
       { status: 400 }
     );
   }
@@ -76,15 +76,19 @@ export async function POST(req: Request) {
     maker: input.makerAddress.toLowerCase() as Address,
     taker: (input.takerAddress?.toLowerCase() ?? ZERO_ADDRESS) as Address,
     makerNFTs: input.makerNFTs.map((n) => ({
-      contractAddress: n.contractAddress.toLowerCase() as Address,
+      standard: 0 as const,
+          amount: 1n,
+          contractAddress: n.contractAddress.toLowerCase() as Address,
       tokenId: BigInt(n.tokenId),
     })),
     takerNFTs: input.takerNFTs.map((n) => ({
-      contractAddress: n.contractAddress.toLowerCase() as Address,
+      standard: 0 as const,
+          amount: 1n,
+          contractAddress: n.contractAddress.toLowerCase() as Address,
       tokenId: BigInt(n.tokenId),
     })),
-    makerMonAmount: BigInt(input.makerMonAmount),
-    takerMonAmount: BigInt(input.takerMonAmount),
+    makerEthAmount: BigInt(input.makerEthAmount),
+    takerEthAmount: BigInt(input.takerEthAmount),
     feeBps: BigInt(input.feeBps),
     flatFee: BigInt(input.flatFee),
     nonce: BigInt(input.nonce),
@@ -114,8 +118,8 @@ export async function POST(req: Request) {
         maker_address: order.maker,
         taker_address: input.takerAddress?.toLowerCase() ?? null,
         status: "open",
-        maker_mon_amount: input.makerMonAmount,
-        taker_mon_amount: input.takerMonAmount,
+        maker_mon_amount: input.makerEthAmount,
+        taker_mon_amount: input.takerEthAmount,
         fee_bps: input.feeBps,
         flat_fee: input.flatFee,
         nonce: input.nonce,

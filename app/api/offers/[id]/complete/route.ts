@@ -6,7 +6,7 @@ import { bumpReputation, getOfferById, recordEvent } from "@/lib/db/offers";
 import { completeOfferSchema } from "@/lib/validation/offers";
 import { publicClient } from "@/lib/chains/client";
 import { settlementAbi } from "@/lib/contracts/settlement";
-import { SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/monad";
+import { SETTLEMENT_CONTRACT_ADDRESS } from "@/lib/chains/ethereum";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { syncDealRoomsOnOfferChange } from "@/lib/deal-rooms/sync";
 

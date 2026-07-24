@@ -4,7 +4,7 @@
  * Guarantees, for accept / cancel / approve / deposit / withdraw alike:
  *   - chain is validated before anything is signed,
  *   - the call is simulated first when possible (catches reverts pre-gas),
- *   - gas is buffered (Monad RPC rejects estimate-tight limits),
+ *   - gas is buffered (Ethereum RPC rejects estimate-tight limits),
  *   - every lifecycle step is logged with structured context,
  *   - the receipt status is checked,
  *   - errors are classified into user-safe messages.
@@ -104,7 +104,7 @@ export async function runWrite(params: RunWriteParams): Promise<RunWriteResult> 
   // ---- Chain validation (fail fast, before any wallet prompt) ----
   logTx(id, "validate", ctx);
   if (walletChainId !== expectedChainId) {
-    const message = `Switch your wallet to Monad (chain ${expectedChainId}) before continuing.`;
+    const message = `Switch your wallet to Ethereum (chain ${expectedChainId}) before continuing.`;
     logTx(id, "error", ctx, { errorName: "WrongNetwork", errorMessage: message });
     throw new TxError(message, "WrongNetwork");
   }
@@ -138,7 +138,7 @@ export async function runWrite(params: RunWriteParams): Promise<RunWriteResult> 
       }
     }
 
-    // ---- Buffered gas estimate (Monad needs headroom) ----
+    // ---- Buffered gas estimate (Ethereum needs headroom) ----
     const gas = await bufferedGas(publicClient, {
       account,
       address,

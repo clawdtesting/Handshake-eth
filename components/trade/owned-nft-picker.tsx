@@ -242,7 +242,7 @@ export function OwnedNFTPicker({
     return (
       <EmptyState
         title="No NFTs found"
-        body="We couldn't find ERC-721 NFTs in this wallet on Monad."
+        body="We couldn't find ERC-721 NFTs in this wallet on Ethereum."
       />
     );
   }
@@ -297,7 +297,7 @@ export function OwnedNFTPicker({
             <button
               type="button"
               onClick={() => setSelectedCollections(new Set())}
-              className="text-xs text-monad-purple hover:underline"
+              className="text-xs text-ethereum-purple hover:underline"
             >
               Clear ({selectedCollections.size})
             </button>
@@ -422,7 +422,7 @@ function CollectionRow({
       className={cn(
         "flex shrink-0 items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-sm transition-colors md:shrink",
         checked
-          ? "border-monad-purple bg-monad-purple/10 text-monad-purple"
+          ? "border-ethereum-purple bg-ethereum-purple/10 text-ethereum-purple"
           : "border-transparent text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
       )}
     >
@@ -430,7 +430,7 @@ function CollectionRow({
         className={cn(
           "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
           checked
-            ? "border-monad-purple bg-monad-purple text-monad-black"
+            ? "border-ethereum-purple bg-ethereum-purple text-ethereum-black"
             : "border-muted-foreground/40"
         )}
       >
@@ -450,7 +450,7 @@ function CollectionRow({
       <span
         className={cn(
           "ml-auto shrink-0 rounded-full px-1.5 text-xs",
-          checked ? "bg-monad-purple/20" : "bg-muted"
+          checked ? "bg-ethereum-purple/20" : "bg-muted"
         )}
       >
         {count}
@@ -477,7 +477,7 @@ function LayoutToggle({
           className={cn(
             "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
             layout === option
-              ? "bg-monad-purple text-monad-black"
+              ? "bg-ethereum-purple text-ethereum-black"
               : "text-muted-foreground hover:text-foreground"
           )}
           aria-pressed={layout === option}

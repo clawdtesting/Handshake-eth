@@ -7,10 +7,10 @@ import type {
 
 /**
  * Alchemy NFT API v3 provider. Network slug is configurable so the same
- * code serves Monad testnet and mainnet.
+ * code serves Ethereum mainnet.
  */
 
-const ALCHEMY_NETWORK = process.env.ALCHEMY_NETWORK ?? "monad-mainnet";
+const ALCHEMY_NETWORK = process.env.ALCHEMY_NETWORK ?? "ethereum-mainnet";
 
 function baseUrl(): string {
   const key = process.env.ALCHEMY_API_KEY;

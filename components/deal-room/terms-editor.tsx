@@ -11,13 +11,13 @@ import { NFTMedia } from "@/components/ui/nft-media";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWalletNFTs } from "@/hooks/use-market";
 import { diffDrafts } from "@/lib/deal-rooms/diff";
-import { cn, formatMon, prettyCollectionName, shortAddress } from "@/lib/utils";
+import { cn, formatEth, prettyCollectionName, shortAddress } from "@/lib/utils";
 import type { DealRoomDraft, DealRoomRevision, RevisionNFT } from "@/lib/types";
 import type { NFTAsset } from "@/lib/types";
 
 /**
  * Counter composer: edit either side of the draft — pick NFTs straight from
- * each wallet's live inventory, adjust MON, set the offer expiry, add a note.
+ * each wallet's live inventory, adjust ETH, set the offer expiry, add a note.
  * Drafts cost nothing and move nothing; the sticky diff bar keeps the changes
  * vs the answered round visible while editing.
  */
@@ -105,13 +105,13 @@ function SidePicker({
           {label}
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Add MON, NFTs, or both — either side can be MON-only.
+          Add ETH, NFTs, or both — either side can be ETH-only.
         </p>
       </div>
 
       <div>
         <label className="mb-1 block text-xs text-muted-foreground">
-          MON amount
+          ETH amount
         </label>
         <Input
           inputMode="decimal"
@@ -128,7 +128,7 @@ function SidePicker({
               key={nftKey(nft)}
               type="button"
               onClick={() => onToggle(nft)}
-              className="group flex items-center gap-1 rounded-full border border-monad-purple/40 bg-monad-purple/10 py-0.5 pl-2 pr-1 text-xs"
+              className="group flex items-center gap-1 rounded-full border border-ethereum-purple/40 bg-ethereum-purple/10 py-0.5 pl-2 pr-1 text-xs"
               title="Remove from draft"
             >
               {nft.name ?? `#${nft.tokenId}`}
@@ -192,7 +192,7 @@ function SidePicker({
                     className={cn(
                       "overflow-hidden rounded-md border text-left transition",
                       active
-                        ? "border-monad-purple ring-1 ring-monad-purple"
+                        ? "border-ethereum-purple ring-1 ring-ethereum-purple"
                         : "border-border opacity-80 hover:opacity-100"
                     )}
                     title={`${nft.collectionName ?? ""} #${nft.tokenId}`}
@@ -235,11 +235,11 @@ export function TermsEditor({
 }) {
   const [makerNFTs, setMakerNFTs] = useState<RevisionNFT[]>(base.makerNFTs);
   const [takerNFTs, setTakerNFTs] = useState<RevisionNFT[]>(base.takerNFTs);
-  const [makerMon, setMakerMon] = useState(
-    BigInt(base.makerMonAmount) > 0n ? formatMon(base.makerMonAmount, 18) : ""
+  const [makerEth, setMakerEth] = useState(
+    BigInt(base.makerEthAmount) > 0n ? formatEth(base.makerEthAmount, 18) : ""
   );
-  const [takerMon, setTakerMon] = useState(
-    BigInt(base.takerMonAmount) > 0n ? formatMon(base.takerMonAmount, 18) : ""
+  const [takerEth, setTakerEth] = useState(
+    BigInt(base.takerEthAmount) > 0n ? formatEth(base.takerEthAmount, 18) : ""
   );
   const [expirySeconds, setExpirySeconds] = useState<number>(86_400);
   const [note, setNote] = useState("");
@@ -266,8 +266,8 @@ export function TermsEditor({
         takerAddress: base.takerAddress,
         makerNFTs,
         takerNFTs,
-        makerMonAmount: (makerMon ? parseEther(makerMon) : 0n).toString(),
-        takerMonAmount: (takerMon ? parseEther(takerMon) : 0n).toString(),
+        makerEthAmount: (makerEth ? parseEther(makerEth) : 0n).toString(),
+        takerEthAmount: (takerEth ? parseEther(takerEth) : 0n).toString(),
         feeBps: base.feeBps,
         flatFee: base.flatFee,
         offerExpiry: Math.floor(Date.now() / 1000) + expirySeconds,
@@ -275,7 +275,7 @@ export function TermsEditor({
     } catch {
       return null;
     }
-  }, [base, makerNFTs, takerNFTs, makerMon, takerMon, expirySeconds]);
+  }, [base, makerNFTs, takerNFTs, makerEth, takerEth, expirySeconds]);
 
   const chips = useMemo(
     () => (draft ? diffDrafts(base, draft) : []),
@@ -293,11 +293,11 @@ export function TermsEditor({
 
   const canSubmit =
     !!draft &&
-    (draft.makerNFTs.length > 0 || BigInt(draft.makerMonAmount) > 0n) &&
-    (draft.takerNFTs.length > 0 || BigInt(draft.takerMonAmount) > 0n);
+    (draft.makerNFTs.length > 0 || BigInt(draft.makerEthAmount) > 0n) &&
+    (draft.takerNFTs.length > 0 || BigInt(draft.takerEthAmount) > 0n);
 
   return (
-    <Card className="border-monad-purple/40">
+    <Card className="border-ethereum-purple/40">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">
           Counter round {base.revisionNumber}
@@ -313,8 +313,8 @@ export function TermsEditor({
             wallet={base.makerAddress}
             selected={makerNFTs}
             onToggle={toggle(setMakerNFTs)}
-            monValue={makerMon}
-            onMonChange={setMakerMon}
+            monValue={makerEth}
+            onMonChange={setMakerEth}
             initialCollection={initialMakerCollection}
           />
           <SidePicker
@@ -322,8 +322,8 @@ export function TermsEditor({
             wallet={base.takerAddress}
             selected={takerNFTs}
             onToggle={toggle(setTakerNFTs)}
-            monValue={takerMon}
-            onMonChange={setTakerMon}
+            monValue={takerEth}
+            onMonChange={setTakerEth}
           />
         </div>
 
@@ -352,7 +352,7 @@ export function TermsEditor({
             </label>
             <Input
               maxLength={240}
-              placeholder="Throw in 5 MON and it's done."
+              placeholder="Throw in 5 ETH and it's done."
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -373,7 +373,7 @@ export function TermsEditor({
               {chips.map((chip, i) => (
                 <span
                   key={i}
-                  className="rounded-full border border-monad-purple/30 bg-monad-purple/10 px-2 py-0.5 text-xs"
+                  className="rounded-full border border-ethereum-purple/30 bg-ethereum-purple/10 px-2 py-0.5 text-xs"
                 >
                   {chip.label}
                 </span>

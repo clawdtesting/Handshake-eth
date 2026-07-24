@@ -16,7 +16,7 @@ import {
   useRoomSession,
   type RoomListEntry,
 } from "@/hooks/use-deal-rooms";
-import { formatMon, shortAddress } from "@/lib/utils";
+import { formatEth, shortAddress } from "@/lib/utils";
 import { isActive } from "@/lib/deal-rooms/state-machine";
 
 /**
@@ -42,16 +42,16 @@ function summarize(room: RoomListEntry): string {
   const parts: string[] = [];
   if (rev.makerNFTs.length > 0)
     parts.push(`${rev.makerNFTs.length} NFT${rev.makerNFTs.length > 1 ? "s" : ""}`);
-  if (BigInt(rev.makerMonAmount) > 0n)
-    parts.push(`${formatMon(rev.makerMonAmount)} MON`);
+  if (BigInt(rev.makerEthAmount) > 0n)
+    parts.push(`${formatEth(rev.makerEthAmount)} ETH`);
   const left = parts.join(" + ") || "nothing";
   const rightParts: string[] = [];
   if (rev.takerNFTs.length > 0)
     rightParts.push(
       `${rev.takerNFTs.length} NFT${rev.takerNFTs.length > 1 ? "s" : ""}`
     );
-  if (BigInt(rev.takerMonAmount) > 0n)
-    rightParts.push(`${formatMon(rev.takerMonAmount)} MON`);
+  if (BigInt(rev.takerEthAmount) > 0n)
+    rightParts.push(`${formatEth(rev.takerEthAmount)} ETH`);
   const right = rightParts.join(" + ") || "nothing";
   return `${left} ⇄ ${right}`;
 }
@@ -66,7 +66,7 @@ export function RoomsSection({ wallet }: { wallet: string }) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-          <Handshake className="h-8 w-8 text-monad-purple" />
+          <Handshake className="h-8 w-8 text-ethereum-purple" />
           <p className="text-sm text-muted-foreground">
             Sign in once to see your private negotiations. The signature only
             proves wallet ownership — it can&apos;t move assets.
@@ -133,9 +133,9 @@ export function RoomsSection({ wallet }: { wallet: string }) {
           <Link
             key={room.id}
             href={`/rooms/${room.id}`}
-            className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card/60 p-3 transition hover:border-monad-purple/40"
+            className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card/60 p-3 transition hover:border-ethereum-purple/40"
           >
-            <Handshake className="h-4 w-4 shrink-0 text-monad-purple" />
+            <Handshake className="h-4 w-4 shrink-0 text-ethereum-purple" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-medium">

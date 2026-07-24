@@ -19,11 +19,11 @@ const order: TradeOrder = {
   maker: maker.address.toLowerCase() as Address,
   taker: ZERO_ADDRESS,
   makerNFTs: [
-    { contractAddress: ("0x" + "2".repeat(40)) as Address, tokenId: 1n },
+    { standard: 0, contractAddress: ("0x" + "2".repeat(40)) as Address, tokenId: 1n, amount: 1n },
   ],
   takerNFTs: [],
-  makerMonAmount: 0n,
-  takerMonAmount: parseEther("1"),
+  makerEthAmount: 0n,
+  takerEthAmount: parseEther("1"),
   feeBps: 100n,
   flatFee: 0n,
   nonce: 42n,
@@ -32,17 +32,17 @@ const order: TradeOrder = {
 
 describe("EIP-712 orders", () => {
   it("produces a stable deterministic hash", () => {
-    const a = hashOrder(order, 10143, ("0x" + "9".repeat(40)) as Address);
-    const b = hashOrder(order, 10143, ("0x" + "9".repeat(40)) as Address);
+    const a = hashOrder(order, 1, ("0x" + "9".repeat(40)) as Address);
+    const b = hashOrder(order, 1, ("0x" + "9".repeat(40)) as Address);
     expect(a).toBe(b);
     expect(a).toMatch(/^0x[a-f0-9]{64}$/);
   });
 
   it("hash changes when the order changes", () => {
-    const a = hashOrder(order, 10143, ("0x" + "9".repeat(40)) as Address);
+    const a = hashOrder(order, 1, ("0x" + "9".repeat(40)) as Address);
     const b = hashOrder(
-      { ...order, takerMonAmount: parseEther("2") },
-      10143,
+      { ...order, takerEthAmount: parseEther("2") },
+      1,
       ("0x" + "9".repeat(40)) as Address
     );
     expect(a).not.toBe(b);
@@ -50,19 +50,19 @@ describe("EIP-712 orders", () => {
 
   it("verifies a signature from the maker and rejects tampering", async () => {
     const signature = await maker.signTypedData({
-      domain: getOrderDomain(10143, ("0x" + "9".repeat(40)) as Address),
+      domain: getOrderDomain(1, ("0x" + "9".repeat(40)) as Address),
       types: ORDER_TYPES,
       primaryType: "TradeOrder",
       message: order,
     });
     expect(
-      await verifyOrderSignature(order, signature, 10143, ("0x" + "9".repeat(40)) as Address)
+      await verifyOrderSignature(order, signature, 1, ("0x" + "9".repeat(40)) as Address)
     ).toBe(true);
     expect(
       await verifyOrderSignature(
         { ...order, nonce: 43n },
         signature,
-        10143,
+        1,
         ("0x" + "9".repeat(40)) as Address
       )
     ).toBe(false);
@@ -70,13 +70,13 @@ describe("EIP-712 orders", () => {
 
   it("binds the signature to the chain id", async () => {
     const signature = await maker.signTypedData({
-      domain: getOrderDomain(10143, ("0x" + "9".repeat(40)) as Address),
+      domain: getOrderDomain(1, ("0x" + "9".repeat(40)) as Address),
       types: ORDER_TYPES,
       primaryType: "TradeOrder",
       message: order,
     });
     expect(
-      await verifyOrderSignature(order, signature, 1, ("0x" + "9".repeat(40)) as Address)
+      await verifyOrderSignature(order, signature, 2, ("0x" + "9".repeat(40)) as Address)
     ).toBe(false);
   });
 

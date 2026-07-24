@@ -148,9 +148,9 @@ Reentrancy in Handshake.fulfillTrade(TradeOrder,bytes) (src/Handshake.sol#L224-L
   - _transferNFTs(order.takerNFTs,msg.sender,order.maker) (src/Handshake.sol#L288)
     - nft.safeTransferFrom(from,to,items[i].tokenId) (src/Handshake.sol#L454)
   State variables written after the call(s):
-  - _payout(order.maker,order.takerMonAmount) (src/Handshake.sol#L294)
+  - _payout(order.maker,order.takerEthAmount) (src/Handshake.sol#L294)
     - escrowBalance[to] += amount (src/Handshake.sol#L498)
-  - _payout(msg.sender,order.makerMonAmount) (src/Handshake.sol#L295)
+  - _payout(msg.sender,order.makerEthAmount) (src/Handshake.sol#L295)
     - escrowBalance[to] += amount (src/Handshake.sol#L498)
 
 ## calls-loop

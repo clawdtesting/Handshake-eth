@@ -37,8 +37,8 @@
  * incremental and never miss (or re-process) a settlement.
  *
  * Usage:
- *   export MONAD_RPC_URL=https://rpc.monad.xyz
- *   export HANDSHAKE_ADDRESS=0x017605384782b0841Fde1f1E8539EbEDD2c43420
+ *   export ETH_MAINNET_RPC_URL=https://rpc.ethereum.xyz
+ *   export HANDSHAKE_ADDRESS=
  *   export NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
  *   export SUPABASE_SERVICE_ROLE_KEY=...            # service role (bypasses RLS)
  *   # optional:
@@ -62,7 +62,7 @@ import { dirname } from "node:path";
 // Config
 // --------------------------------------------------------------------------
 
-const RPC = process.env.MONAD_RPC_URL ?? "https://rpc.monad.xyz";
+const RPC = process.env.ETH_MAINNET_RPC_URL ?? "https://rpc.ethereum.xyz";
 const HANDSHAKE =
   process.env.HANDSHAKE_ADDRESS ?? process.env.NEXT_PUBLIC_SETTLEMENT_CONTRACT_ADDRESS;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -98,7 +98,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 // Event ABIs kept local so the script has no build-time dependency on the app.
 const executedEvent = parseAbiItem(
-  "event TradeExecuted(bytes32 indexed orderHash, address indexed maker, address indexed taker, uint256 makerMonAmount, uint256 takerMonAmount, uint256 protocolFee)"
+  "event TradeExecuted(bytes32 indexed orderHash, address indexed maker, address indexed taker, uint256 makerEthAmount, uint256 takerEthAmount, uint256 protocolFee)"
 );
 const cancelledEvent = parseAbiItem(
   "event TradeCancelled(address indexed maker, uint256 indexed nonce)"

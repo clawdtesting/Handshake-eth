@@ -7,7 +7,7 @@ import type { NFTAsset } from "@/lib/types";
  * Self-healing NFT media.
  *
  * The wallet indexer (Alchemy/OpenSea) sometimes lists a token with no image —
- * common for newer Monad collections whose media it hasn't cached yet. When
+ * common for newer Ethereum collections whose media it hasn't cached yet. When
  * that happens we resolve the image the reliable way: on-chain `tokenURI()` →
  * metadata JSON → image URL, via `/api/token-metadata` (the same path the
  * manual "add by contract + token ID" flow already uses).

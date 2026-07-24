@@ -1,4 +1,4 @@
-import { MONAD_CHAIN_ID } from "@/lib/chains/monad";
+import { ETH_MAINNET_CHAIN_ID } from "@/lib/chains/ethereum";
 
 /**
  * Client-safe half of the Deal Room session: the sign-in message the wallet
@@ -18,7 +18,7 @@ export function buildSessionMessage(p: {
     "This signature only proves wallet ownership.",
     "It does NOT approve, transfer, or trade any asset.",
     `Wallet: ${p.walletAddress.toLowerCase()}`,
-    `Chain: ${MONAD_CHAIN_ID}`,
+    `Chain: ${ETH_MAINNET_CHAIN_ID}`,
     `Timestamp: ${p.timestamp}`,
   ].join("\n");
 }

@@ -43,17 +43,17 @@ export default function MarketPage() {
       <section className="py-14">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-monad-purple/30 bg-monad-purple/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-monad-purple">
+            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-ethereum-purple/30 bg-ethereum-purple/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-ethereum-purple">
               <Sparkles className="h-3.5 w-3.5" /> Market
             </p>
             <h1 className="text-3xl font-semibold">Open Deals</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Filter by Monad collection so public deals stay easy to scan.
+              Filter by Ethereum collection so public deals stay easy to scan.
             </p>
           </div>
           <Link
             href="/create"
-            className="text-sm text-monad-purple hover:underline"
+            className="text-sm text-ethereum-purple hover:underline"
           >
             Propose a Deal →
           </Link>
@@ -75,7 +75,7 @@ export default function MarketPage() {
             {selectedCollection && (
               <button
                 type="button"
-                className="text-monad-purple hover:underline"
+                className="text-ethereum-purple hover:underline"
                 onClick={() => setSelectedCollection(null)}
               >
                 Clear filter
@@ -118,7 +118,7 @@ export default function MarketPage() {
 
       <section
         id="recent-handshakes"
-        className="border-t border-monad-purple/20 py-14"
+        className="border-t border-ethereum-purple/20 py-14"
       >
         <h2 className="mb-6 text-2xl font-semibold">Recent Handshakes</h2>
         {loadingRecent ? (
@@ -159,7 +159,7 @@ function CollectionFilterBanner({
     FEATURED_COLLECTIONS.map((c) => c.address),
   );
   return (
-    <div className="rounded-2xl border border-monad-purple/20 bg-gradient-to-r from-monad-purple/10 via-card/80 to-cyan-400/10 p-3 shadow-lg shadow-monad-purple/5">
+    <div className="rounded-2xl border border-ethereum-purple/20 bg-gradient-to-r from-ethereum-purple/10 via-card/80 to-cyan-400/10 p-3 shadow-lg shadow-ethereum-purple/5">
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <CollectionStatusDot status="open" />
@@ -180,11 +180,11 @@ function CollectionFilterBanner({
           onClick={() => onSelect(null)}
           className={`flex flex-col items-center gap-2 rounded-xl border px-3 py-3 text-sm transition ${
             selectedCollection === null
-              ? "border-monad-purple bg-monad-purple/15 text-foreground"
-              : "border-border bg-secondary/40 text-muted-foreground hover:border-monad-purple/50 hover:text-foreground"
+              ? "border-ethereum-purple bg-ethereum-purple/15 text-foreground"
+              : "border-border bg-secondary/40 text-muted-foreground hover:border-ethereum-purple/50 hover:text-foreground"
           }`}
         >
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-monad-purple/20 text-lg font-bold text-monad-purple">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ethereum-purple/20 text-lg font-bold text-ethereum-purple">
             All
           </span>
           <span className="font-medium">All collections</span>
@@ -220,8 +220,8 @@ function CollectionFilterButton({
       onClick={onClick}
       className={`flex flex-col items-center gap-2 rounded-xl border px-3 py-3 text-sm transition ${
         selected
-          ? "border-monad-purple bg-monad-purple/15 text-foreground"
-          : "border-border bg-secondary/40 text-muted-foreground hover:border-monad-purple/50 hover:text-foreground"
+          ? "border-ethereum-purple bg-ethereum-purple/15 text-foreground"
+          : "border-border bg-secondary/40 text-muted-foreground hover:border-ethereum-purple/50 hover:text-foreground"
       }`}
       aria-pressed={selected}
     >
@@ -279,7 +279,7 @@ function LayoutToggle({
           onClick={() => onChange(option)}
           className={`rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors ${
             layout === option
-              ? "bg-monad-purple text-monad-black"
+              ? "bg-ethereum-purple text-ethereum-black"
               : "text-muted-foreground hover:text-foreground"
           }`}
           aria-pressed={layout === option}

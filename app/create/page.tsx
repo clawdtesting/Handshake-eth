@@ -34,9 +34,9 @@ import { COLLECTION_APPROVALS_KEY } from "@/hooks/use-approvals";
 import { FeeBreakdown } from "@/components/trade/fee-breakdown";
 import { EmptyState } from "@/components/empty-state";
 import {
-  MONAD_CHAIN_ID,
+  ETH_MAINNET_CHAIN_ID,
   SETTLEMENT_CONTRACT_ADDRESS,
-} from "@/lib/chains/monad";
+} from "@/lib/chains/ethereum";
 import { runWrite } from "@/lib/chains/tx";
 import { classifyTxError } from "@/lib/chains/tx-errors";
 import {
@@ -64,7 +64,7 @@ import {
   ZERO_ADDRESS,
 } from "@/lib/orders/eip712";
 import { COLLECTION_BID_TOKEN_ID } from "@/lib/collection-bids";
-import { formatMon, prettyCollectionName, shortAddress } from "@/lib/utils";
+import { formatEth, prettyCollectionName, shortAddress } from "@/lib/utils";
 import type { CollectionSearchResult, NFTAsset } from "@/lib/types";
 
 type Intent = "sell" | "buy" | "swap" | "custom";
@@ -79,13 +79,13 @@ const INTENTS: {
   {
     id: "sell",
     title: "Sell NFT",
-    blurb: "Receive MON for your NFT.",
+    blurb: "Receive ETH for your NFT.",
     icon: Tag,
   },
   {
     id: "buy",
     title: "Buy NFT",
-    blurb: "Offer MON for an NFT you want.",
+    blurb: "Offer ETH for an NFT you want.",
     icon: ShoppingCart,
   },
   {
@@ -97,7 +97,7 @@ const INTENTS: {
   {
     id: "custom",
     title: "Custom Deal",
-    blurb: "Combine NFTs and MON on both sides.",
+    blurb: "Combine NFTs and ETH on both sides.",
     icon: Coins,
   },
 ];
@@ -186,7 +186,7 @@ function ProposeDealForm() {
     {},
   );
 
-  const makerMonWei = useMemo(() => {
+  const makerEthWei = useMemo(() => {
     try {
       return offeredMon ? parseEther(offeredMon) : 0n;
     } catch {
@@ -194,7 +194,7 @@ function ProposeDealForm() {
     }
   }, [offeredMon]);
 
-  const takerMonWei = useMemo(() => {
+  const takerEthWei = useMemo(() => {
     try {
       return requestedMon ? parseEther(requestedMon) : 0n;
     } catch {
@@ -209,8 +209,8 @@ function ProposeDealForm() {
     intent === "buy" || intent === "swap" || intent === "custom";
   const requestsMon = intent === "sell" || intent === "custom";
 
-  const hasOfferedSomething = offeredNfts.length > 0 || makerMonWei > 0n;
-  const hasRequestedSomething = requestedNfts.length > 0 || takerMonWei > 0n;
+  const hasOfferedSomething = offeredNfts.length > 0 || makerEthWei > 0n;
+  const hasRequestedSomething = requestedNfts.length > 0 || takerEthWei > 0n;
   const offeredContracts = useMemo(
     () =>
       Array.from(
@@ -347,8 +347,8 @@ function ProposeDealForm() {
   async function handleApproveCollections() {
     if (!address || !publicClient) return;
 
-    if (chainId !== MONAD_CHAIN_ID) {
-      toast.error("Switch to the Monad network first");
+    if (chainId !== ETH_MAINNET_CHAIN_ID) {
+      toast.error("Switch to the Ethereum network first");
       return;
     }
 
@@ -386,7 +386,7 @@ function ProposeDealForm() {
           writeContractAsync,
           account: address,
           walletChainId: chainId,
-          expectedChainId: MONAD_CHAIN_ID,
+          expectedChainId: ETH_MAINNET_CHAIN_ID,
           label: "Approve collection",
           address: contract as Address,
           abi: erc721Abi,
@@ -456,8 +456,8 @@ function ProposeDealForm() {
   async function handleSign() {
     if (!address) return;
 
-    if (chainId !== MONAD_CHAIN_ID) {
-      toast.error("Switch to the Monad network first");
+    if (chainId !== ETH_MAINNET_CHAIN_ID) {
+      toast.error("Switch to the Ethereum network first");
       return;
     }
 
@@ -536,15 +536,19 @@ function ProposeDealForm() {
         maker: address.toLowerCase() as Address,
         taker,
         makerNFTs: offeredNfts.map((n) => ({
+          standard: 0 as const,
+          amount: 1n,
           contractAddress: n.contractAddress as Address,
           tokenId: BigInt(n.tokenId),
         })),
         takerNFTs: requestedNfts.map((n) => ({
+          standard: 0 as const,
+          amount: 1n,
           contractAddress: n.contractAddress as Address,
           tokenId: BigInt(n.tokenId),
         })),
-        makerMonAmount: makerMonWei,
-        takerMonAmount: takerMonWei,
+        makerEthAmount: makerEthWei,
+        takerEthAmount: takerEthWei,
         feeBps,
         flatFee,
         nonce,
@@ -562,13 +566,13 @@ function ProposeDealForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chainId: MONAD_CHAIN_ID,
+          chainId: ETH_MAINNET_CHAIN_ID,
           makerAddress: address,
           takerAddress: effectiveTaker || null,
           makerNFTs: offeredNfts.map((n) => ({ ...n })),
           takerNFTs: requestedNfts.map((n) => ({ ...n })),
-          makerMonAmount: makerMonWei.toString(),
-          takerMonAmount: takerMonWei.toString(),
+          makerEthAmount: makerEthWei.toString(),
+          takerEthAmount: takerEthWei.toString(),
           feeBps: Number(feeBps),
           flatFee: flatFee.toString(),
           nonce: nonce.toString(),
@@ -611,7 +615,7 @@ function ProposeDealForm() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Propose a Deal</h1>
         <p className="mt-2 text-foreground/85">
-          Build a public or private NFT deal. Trade NFTs, MON, or both with
+          Build a public or private NFT deal. Trade NFTs, ETH, or both with
           another collector.
         </p>
       </div>
@@ -644,7 +648,7 @@ function ProposeDealForm() {
             setOfferedMon={setOfferedMon}
             requestedMon={requestedMon}
             setRequestedMon={setRequestedMon}
-            makerMonWei={makerMonWei}
+            makerEthWei={makerEthWei}
             requestContract={requestContract}
             setRequestContract={setRequestContract}
             selectedRequestCollection={selectedRequestCollection}
@@ -675,8 +679,8 @@ function ProposeDealForm() {
             intent={intent!}
             offeredNfts={offeredNfts}
             requestedNfts={requestedNfts}
-            makerMonWei={makerMonWei}
-            takerMonWei={takerMonWei}
+            makerEthWei={makerEthWei}
+            takerEthWei={takerEthWei}
             visibility={visibility}
             takerAddress={takerAddress}
             expirySeconds={expirySeconds}
@@ -818,15 +822,15 @@ function StepIntent({
               onClick={() => onPick(opt.id)}
               className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
                 selected
-                  ? "border-monad-purple bg-monad-purple/15 shadow-lg shadow-monad-purple/10 ring-1 ring-monad-purple"
-                  : "border-monad-purple/30 bg-monad-purple/5 hover:border-monad-purple hover:bg-monad-purple/10"
+                  ? "border-ethereum-purple bg-ethereum-purple/15 shadow-lg shadow-ethereum-purple/10 ring-1 ring-ethereum-purple"
+                  : "border-ethereum-purple/30 bg-ethereum-purple/5 hover:border-ethereum-purple hover:bg-ethereum-purple/10"
               }`}
             >
               <span
                 className={`mt-0.5 rounded-lg p-2 ${
                   selected
-                    ? "bg-monad-purple text-monad-black"
-                    : "bg-monad-purple/15 text-monad-purple"
+                    ? "bg-ethereum-purple text-ethereum-black"
+                    : "bg-ethereum-purple/15 text-ethereum-purple"
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -835,7 +839,7 @@ function StepIntent({
                 <span className="flex items-center gap-2 font-medium">
                   {opt.title}
                   {opt.id === "custom" && (
-                    <span className="rounded-full border border-monad-purple/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-monad-purple">
+                    <span className="rounded-full border border-ethereum-purple/40 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ethereum-purple">
                       Advanced
                     </span>
                   )}
@@ -845,7 +849,7 @@ function StepIntent({
                 </span>
               </span>
               {selected && (
-                <Check className="ml-auto h-5 w-5 text-monad-purple" />
+                <Check className="ml-auto h-5 w-5 text-ethereum-purple" />
               )}
             </button>
           );
@@ -868,7 +872,7 @@ function StepDetails(props: {
   setOfferedMon: (v: string) => void;
   requestedMon: string;
   setRequestedMon: (v: string) => void;
-  makerMonWei: bigint;
+  makerEthWei: bigint;
   requestContract: string;
   setRequestContract: (v: string) => void;
   selectedRequestCollection: CollectionSearchResult | null;
@@ -894,7 +898,7 @@ function StepDetails(props: {
     setOfferedMon,
     requestedMon,
     setRequestedMon,
-    makerMonWei,
+    makerEthWei,
     requestContract,
     setRequestContract,
     selectedRequestCollection,
@@ -946,7 +950,7 @@ function StepDetails(props: {
                   href="https://x.com/Handshake_NFT"
                   target="_blank"
                   rel="noreferrer"
-                  className="font-medium text-monad-purple hover:underline"
+                  className="font-medium text-ethereum-purple hover:underline"
                 >
                   Request a collection on X
                 </a>
@@ -984,7 +988,7 @@ function StepDetails(props: {
           {offersMon && (
             <div>
               <label className="mb-1.5 block text-sm font-medium">
-                MON you give
+                ETH you give
               </label>
               <Input
                 placeholder="0.0"
@@ -992,9 +996,9 @@ function StepDetails(props: {
                 value={offeredMon}
                 onChange={(e) => setOfferedMon(e.target.value)}
               />
-              {makerMonWei > 0n && (
+              {makerEthWei > 0n && (
                 <p className="mt-1.5 text-xs text-amber-400">
-                  MON you offer must be deposited (plus the protocol fee) into
+                  ETH you offer must be deposited (plus the protocol fee) into
                   the settlement escrow before the deal can be accepted. You
                   control the escrow and can withdraw anytime.
                 </p>
@@ -1019,7 +1023,7 @@ function StepDetails(props: {
             <>
               <p className="text-sm text-muted-foreground">
                 The NFT(s) you want, by contract + token ID. For buy deals,
-                select a collection and leave Token ID empty to offer MON for
+                select a collection and leave Token ID empty to offer ETH for
                 any NFT in that collection; holders can answer with a private
                 deal.
               </p>
@@ -1094,7 +1098,7 @@ function StepDetails(props: {
                 </Button>
               </div>
               {selectedRarityNft && (
-                <div className="space-y-2 rounded-lg border border-monad-purple/25 bg-monad-purple/10 p-3">
+                <div className="space-y-2 rounded-lg border border-ethereum-purple/25 bg-ethereum-purple/10 p-3">
                   <div>
                     <p className="text-sm font-medium">Rarity</p>
                     <p className="text-xs text-muted-foreground">
@@ -1141,7 +1145,7 @@ function StepDetails(props: {
           {requestsMon && (
             <div>
               <label className="mb-1.5 block text-sm font-medium">
-                MON you want to receive
+                ETH you want to receive
               </label>
               <Input
                 placeholder="0.0"
@@ -1249,8 +1253,8 @@ function StepReview({
   intent,
   offeredNfts,
   requestedNfts,
-  makerMonWei,
-  takerMonWei,
+  makerEthWei,
+  takerEthWei,
   visibility,
   takerAddress,
   expirySeconds,
@@ -1259,8 +1263,8 @@ function StepReview({
   intent: Intent;
   offeredNfts: NFTAsset[];
   requestedNfts: NFTAsset[];
-  makerMonWei: bigint;
-  takerMonWei: bigint;
+  makerEthWei: bigint;
+  takerEthWei: bigint;
   visibility: Visibility;
   takerAddress: string;
   expirySeconds: number;
@@ -1281,12 +1285,12 @@ function StepReview({
               <ReviewSide
                 title="You give"
                 nfts={offeredNfts}
-                mon={makerMonWei}
+                eth={makerEthWei}
               />
               <ReviewSide
                 title="You get"
                 nfts={requestedNfts}
-                mon={takerMonWei}
+                eth={takerEthWei}
               />
             </div>
             <ReviewRow label="Visibility" value={visLabel} />
@@ -1324,8 +1328,8 @@ function StepReview({
       </div>
       <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
         <FeeBreakdown
-          makerMonAmount={makerMonWei}
-          takerMonAmount={takerMonWei}
+          makerEthAmount={makerEthWei}
+          takerEthAmount={takerEthWei}
         />
       </div>
     </div>
@@ -1344,18 +1348,18 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
 function ReviewSide({
   title,
   nfts,
-  mon,
+  eth,
 }: {
   title: string;
   nfts: NFTAsset[];
-  mon: bigint;
+  eth: bigint;
 }) {
   return (
     <div className="rounded-lg border border-border bg-secondary/30 p-3">
       <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {title}
       </p>
-      {nfts.length === 0 && mon === 0n && (
+      {nfts.length === 0 && eth === 0n && (
         <p className="text-sm text-muted-foreground">Nothing</p>
       )}
       {nfts.map((n) => (
@@ -1366,9 +1370,9 @@ function ReviewSide({
           </span>
         </p>
       ))}
-      {mon > 0n && (
-        <p className="text-sm font-semibold text-monad-purple">
-          + {formatMon(mon)} MON
+      {eth > 0n && (
+        <p className="text-sm font-semibold text-ethereum-purple">
+          + {formatEth(eth)} ETH
         </p>
       )}
     </div>
