@@ -474,7 +474,7 @@ function CustomDealSlide() {
     {
       number: "2",
       icon: <Plus className="h-4 w-4" />,
-      title: "Add your T00ns NFT and 10K ETH",
+      title: "Add your T00ns NFT and 0,05 ETH",
       body: "Add the assets you want to offer on your side.",
     },
     {
@@ -562,7 +562,7 @@ function CustomTradeVisual() {
               <span className="text-xs font-semibold text-ethereum-purple">
                 ETH
               </span>
-              <span className="text-base font-bold text-foreground">10K</span>
+              <span className="text-base font-bold text-foreground">0,05</span>
             </div>
           </div>
         </div>
