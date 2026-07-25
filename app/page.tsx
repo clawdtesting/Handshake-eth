@@ -575,10 +575,10 @@ function CustomTradeVisual() {
 
         <div className="rounded-xl border border-ethereum-purple/35 bg-secondary/60 p-2 shadow-lg shadow-ethereum-purple/10">
           <div className="text-center">
-            <SafeCollectionImage
-              collectionAddress="0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9"
-              alt="T00ns x1"
-              className="mx-auto h-[54px] w-[54px] rounded-xl border border-ethereum-purple/30"
+            <img
+              src="/images/t00ns-4798.png"
+              alt="T00ns Token #4798"
+              className="mx-auto h-[54px] w-[54px] rounded-xl border border-ethereum-purple/30 object-cover"
             />
             <p className="mt-1 text-sm font-bold text-foreground">1x</p>
           </div>
