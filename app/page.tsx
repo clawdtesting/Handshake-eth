@@ -474,7 +474,7 @@ function CustomDealSlide() {
     {
       number: "2",
       icon: <Plus className="h-4 w-4" />,
-      title: "Add your T00ns NFT and 0,05 ETH",
+      title: "Add your T00ns NFT and 0,5 ETH",
       body: "Add the assets you want to offer on your side.",
     },
     {
