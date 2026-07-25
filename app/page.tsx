@@ -427,7 +427,7 @@ function WantedOfferSlide() {
                 className="mx-auto"
               />
               <p className="mt-2 text-[1.005rem] font-bold text-cyan-200">
-                6K ETH
+                0,1 ETH
               </p>
               <p className="mt-1 text-xs text-foreground/90">plus fees</p>
             </div>
