@@ -562,7 +562,7 @@ function CustomTradeVisual() {
               <span className="text-xs font-semibold text-ethereum-purple">
                 ETH
               </span>
-              <span className="text-base font-bold text-foreground">0,05</span>
+              <span className="text-base font-bold text-foreground">0,5</span>
             </div>
           </div>
         </div>
