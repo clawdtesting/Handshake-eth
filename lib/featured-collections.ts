@@ -34,6 +34,19 @@ export interface FeaturedCollection {
    * validator approval.
    */
   settlementApproved?: boolean;
+  /**
+   * Curated, project-controlled override for the Handshake settlement-allowlist
+   * signal. Set `true` to surface the collection as allowlisted (green) in the
+   * UI before a live `isCollectionAllowed` read is available — e.g. ahead of the
+   * settlement contract being deployed/configured.
+   *
+   * DISPLAY ONLY. This does NOT change on-chain settlement: the deployed
+   * Handshake contract still enforces its real allowlist in `_verifyNFTs` at
+   * fill time, so a trade only settles once the collection is genuinely
+   * allowlisted on-chain. Prefer the live read (leave this unset) once
+   * `NEXT_PUBLIC_SETTLEMENT_CONTRACT_ADDRESS` points at a real deployment.
+   */
+  allowlisted?: boolean;
 }
 
 /**
@@ -74,7 +87,10 @@ export interface CollectionApprovalDetail {
 }
 
 export function collectionApprovalDetail(
-  collection: Pick<FeaturedCollection, "transferValidator" | "settlementApproved">,
+  collection: Pick<
+    FeaturedCollection,
+    "transferValidator" | "settlementApproved" | "allowlisted"
+  >,
   signals: CollectionTradeSignals = {},
 ): CollectionApprovalDetail {
   const validatorGated = collection.transferValidator === true;
@@ -85,7 +101,11 @@ export function collectionApprovalDetail(
     !validatorGated ||
     collection.settlementApproved === true ||
     signals.validatorApproved === true;
-  const handshakeOk = signals.handshakeAllowed === true;
+  // `allowlisted` is a curated DISPLAY override for when the live
+  // isCollectionAllowed read is unavailable (e.g. pre-deployment). On-chain
+  // settlement still enforces the real allowlist regardless.
+  const handshakeOk =
+    signals.handshakeAllowed === true || collection.allowlisted === true;
 
   const met = (validatorOk ? 1 : 0) + (handshakeOk ? 1 : 0);
   const status: CollectionTradeStatus =
@@ -115,6 +135,11 @@ export const FEATURED_COLLECTIONS: FeaturedCollection[] = [
     name: "T00ns",
     address: "0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9",
     image: "/Logomark.svg",
+    // Curated display override: show T00ns as allowlisted (green) ahead of the
+    // settlement contract being deployed. DISPLAY ONLY — on-chain settlement
+    // still enforces the real allowlist. Remove once the live isCollectionAllowed
+    // read is authoritative.
+    allowlisted: true,
   },
 ];
 
