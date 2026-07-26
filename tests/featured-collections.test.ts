@@ -75,10 +75,15 @@ describe("collectionTradeStatus", () => {
     ).toBe("pending");
   });
 
-  it("with no live signals, gated collections are locked and open ones pending", () => {
+  it("with no live signals: gated → locked, allowlisted → open, else pending", () => {
     for (const c of FEATURED_COLLECTIONS) {
       const status = collectionTradeStatus(c);
-      expect(status).toBe(c.transferValidator ? "locked" : "pending");
+      const expected = c.transferValidator
+        ? "locked"
+        : c.allowlisted
+          ? "open"
+          : "pending";
+      expect(status).toBe(expected);
     }
   });
 });
@@ -94,6 +99,13 @@ describe("collectionApprovalDetail", () => {
     expect(detail.validatorGated).toBe(false);
     expect(detail.validatorOk).toBe(true); // nothing to approve on the validator
     expect(detail.handshakeOk).toBe(false); // this is the one that's missing
+  });
+
+  it("allowlisted display override makes an un-gated collection open with no live signals", () => {
+    const detail = collectionApprovalDetail({ allowlisted: true });
+    expect(detail.status).toBe("open");
+    expect(detail.validatorOk).toBe(true);
+    expect(detail.handshakeOk).toBe(true);
   });
 
   it("un-gated collection is open once the Handshake allowlist lists it", () => {
