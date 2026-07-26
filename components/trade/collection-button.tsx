@@ -1,9 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type {
-  CollectionTradeStatus,
-  FeaturedCollection,
+import {
+  collectionApprovalDetail,
+  type CollectionTradeSignals,
+  type FeaturedCollection,
 } from "@/lib/featured-collections";
 import { SafeCollectionImage } from "@/components/ui/safe-collection-image";
 import { CollectionStatusDot } from "@/components/trade/collection-status-dot";
@@ -12,14 +13,15 @@ export function CollectionButton({
   collection,
   active,
   onClick,
-  status,
+  signals,
 }: {
   collection: FeaturedCollection;
   active: boolean;
   onClick: () => void;
-  /** Trade-readiness status driving the dot colour. */
-  status: CollectionTradeStatus;
+  /** Live trade-readiness signals; drives the dot colour and tooltip. */
+  signals?: CollectionTradeSignals;
 }) {
+  const detail = collectionApprovalDetail(collection, signals ?? {});
   return (
     <button
       type="button"
@@ -39,7 +41,10 @@ export function CollectionButton({
           fallbackSrc={collection.image}
         />
         <CollectionStatusDot
-          status={status}
+          status={detail.status}
+          validatorOk={detail.validatorOk}
+          handshakeOk={detail.handshakeOk}
+          validatorGated={detail.validatorGated}
           className="absolute -right-1 -top-1"
         />
       </span>

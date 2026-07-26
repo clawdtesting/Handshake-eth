@@ -46,7 +46,6 @@ import {
 } from "@/lib/contracts/settlement";
 import {
   FEATURED_COLLECTIONS,
-  collectionTradeStatus,
 } from "@/lib/featured-collections";
 import { CollectionButton } from "@/components/trade/collection-button";
 import { CollectionStatusDot } from "@/components/trade/collection-status-dot";
@@ -1035,7 +1034,7 @@ function StepDetails(props: {
                     active={
                       requestContract.toLowerCase() === c.address.toLowerCase()
                     }
-                    status={collectionTradeStatus(c, signalsFor(c.address))}
+                    signals={signalsFor(c.address)}
                     onClick={() => {
                       setRequestContract(c.address);
                       setSelectedRequestCollection(null);
