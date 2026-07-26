@@ -12,8 +12,8 @@ import { useOffers } from "@/hooks/use-market";
 import { useCollectionTradeSignals } from "@/hooks/use-collection-trade-signals";
 import {
   FEATURED_COLLECTIONS,
-  collectionTradeStatus,
-  type CollectionTradeStatus,
+  collectionApprovalDetail,
+  type CollectionTradeSignals,
   type FeaturedCollection,
 } from "@/lib/featured-collections";
 
@@ -194,7 +194,7 @@ function CollectionFilterBanner({
             key={collection.address}
             collection={collection}
             selected={selectedCollection === collection.address.toLowerCase()}
-            status={collectionTradeStatus(collection, signalsFor(collection.address))}
+            signals={signalsFor(collection.address)}
             onClick={() => onSelect(collection.address.toLowerCase())}
           />
         ))}
@@ -207,13 +207,14 @@ function CollectionFilterButton({
   collection,
   selected,
   onClick,
-  status,
+  signals,
 }: {
   collection: FeaturedCollection;
   selected: boolean;
   onClick: () => void;
-  status: CollectionTradeStatus;
+  signals?: CollectionTradeSignals;
 }) {
+  const detail = collectionApprovalDetail(collection, signals ?? {});
   return (
     <button
       type="button"
@@ -232,7 +233,10 @@ function CollectionFilterButton({
           className="h-12 w-12 rounded-full ring-1 ring-border"
         />
         <CollectionStatusDot
-          status={status}
+          status={detail.status}
+          validatorOk={detail.validatorOk}
+          handshakeOk={detail.handshakeOk}
+          validatorGated={detail.validatorGated}
           className="absolute right-0 top-0 h-3 w-3"
         />
       </span>

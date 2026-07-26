@@ -59,23 +59,45 @@ export interface CollectionTradeSignals {
   handshakeAllowed?: boolean;
 }
 
-export function collectionTradeStatus(
+/**
+ * The two independent approval conditions behind a collection's trade status,
+ * so the UI can show *which* one is missing rather than just "one of two".
+ */
+export interface CollectionApprovalDetail {
+  status: CollectionTradeStatus;
+  /** Transfer-validator condition satisfied (or not applicable). */
+  validatorOk: boolean;
+  /** Handshake settlement allowlist condition satisfied. */
+  handshakeOk: boolean;
+  /** Whether this collection is gated by a transfer validator at all. */
+  validatorGated: boolean;
+}
+
+export function collectionApprovalDetail(
   collection: Pick<FeaturedCollection, "transferValidator" | "settlementApproved">,
   signals: CollectionTradeSignals = {},
-): CollectionTradeStatus {
+): CollectionApprovalDetail {
+  const validatorGated = collection.transferValidator === true;
   // A collection with no transfer validator has nothing to approve there;
   // `settlementApproved` is a manual override for when the validator read is
   // unavailable.
   const validatorOk =
-    collection.transferValidator !== true ||
+    !validatorGated ||
     collection.settlementApproved === true ||
     signals.validatorApproved === true;
   const handshakeOk = signals.handshakeAllowed === true;
 
   const met = (validatorOk ? 1 : 0) + (handshakeOk ? 1 : 0);
-  if (met === 2) return "open";
-  if (met === 1) return "pending";
-  return "locked";
+  const status: CollectionTradeStatus =
+    met === 2 ? "open" : met === 1 ? "pending" : "locked";
+  return { status, validatorOk, handshakeOk, validatorGated };
+}
+
+export function collectionTradeStatus(
+  collection: Pick<FeaturedCollection, "transferValidator" | "settlementApproved">,
+  signals: CollectionTradeSignals = {},
+): CollectionTradeStatus {
+  return collectionApprovalDetail(collection, signals).status;
 }
 
 export const FEATURED_COLLECTIONS: FeaturedCollection[] = [

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   FEATURED_COLLECTIONS,
+  collectionApprovalDetail,
   collectionTradeStatus,
 } from "@/lib/featured-collections";
 
@@ -79,5 +80,54 @@ describe("collectionTradeStatus", () => {
       const status = collectionTradeStatus(c);
       expect(status).toBe(c.transferValidator ? "locked" : "pending");
     }
+  });
+});
+
+describe("collectionApprovalDetail", () => {
+  it("un-gated pending collection: the missing approval is the Handshake allowlist", () => {
+    // T00ns-shaped: no transfer-validator gate, not yet allowlisted.
+    const detail = collectionApprovalDetail(
+      { transferValidator: undefined },
+      { handshakeAllowed: false },
+    );
+    expect(detail.status).toBe("pending");
+    expect(detail.validatorGated).toBe(false);
+    expect(detail.validatorOk).toBe(true); // nothing to approve on the validator
+    expect(detail.handshakeOk).toBe(false); // this is the one that's missing
+  });
+
+  it("un-gated collection is open once the Handshake allowlist lists it", () => {
+    const detail = collectionApprovalDetail(
+      { transferValidator: undefined },
+      { handshakeAllowed: true },
+    );
+    expect(detail.status).toBe("open");
+    expect(detail.handshakeOk).toBe(true);
+  });
+
+  it("gated collection with only the allowlist met is pending on the validator", () => {
+    const detail = collectionApprovalDetail(
+      { transferValidator: true },
+      { handshakeAllowed: true, validatorApproved: false },
+    );
+    expect(detail.status).toBe("pending");
+    expect(detail.validatorGated).toBe(true);
+    expect(detail.validatorOk).toBe(false); // validator authorization is missing
+    expect(detail.handshakeOk).toBe(true);
+  });
+
+  it("gated collection with neither approval is locked", () => {
+    const detail = collectionApprovalDetail({ transferValidator: true });
+    expect(detail.status).toBe("locked");
+    expect(detail.validatorOk).toBe(false);
+    expect(detail.handshakeOk).toBe(false);
+  });
+
+  it("status matches collectionTradeStatus for the same inputs", () => {
+    const signals = { handshakeAllowed: true } as const;
+    const c = { transferValidator: true, settlementApproved: true } as const;
+    expect(collectionApprovalDetail(c, signals).status).toBe(
+      collectionTradeStatus(c, signals),
+    );
   });
 });
