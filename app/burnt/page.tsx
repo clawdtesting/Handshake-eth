@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Flame, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  ChevronDown,
+  Flame,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,13 +16,14 @@ import { NFTMedia } from "@/components/ui/nft-media";
 import {
   useBurntStats,
   useBurntTokens,
+  useBurntTraits,
   type BurntStatus,
   type BurntToken,
+  type SelectedTrait,
+  type TraitType,
+  type TraitLeaderRow,
 } from "@/hooks/use-burnt";
-import {
-  explorerAddressUrl,
-  explorerTokenUrl,
-} from "@/lib/chains/ethereum";
+import { explorerAddressUrl, explorerTokenUrl } from "@/lib/chains/ethereum";
 import { cn, shortAddress } from "@/lib/utils";
 
 const FILTERS: { key: BurntStatus; label: string }[] = [
@@ -29,10 +36,17 @@ function fmt(n: number | null | undefined): string {
   return typeof n === "number" ? n.toLocaleString("en-US") : "—";
 }
 
+function traitId(t: SelectedTrait): string {
+  return `${t.traitType}~${t.value}`;
+}
+
 export default function BurntPage() {
   const { data: stats, isLoading: loadingStats } = useBurntStats();
+  const { data: traits, isLoading: loadingTraits } = useBurntTraits();
   const [filter, setFilter] = useState<BurntStatus>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [traitsOpen, setTraitsOpen] = useState(false);
+  const [selectedTraits, setSelectedTraits] = useState<SelectedTrait[]>([]);
 
   const collectionName = stats?.collection.name ?? "the collection";
   const collectionAddress = stats?.collection.address ?? "";
@@ -43,6 +57,15 @@ export default function BurntPage() {
       if (next.has(tokenId)) next.delete(tokenId);
       else next.add(tokenId);
       return next;
+    });
+  }
+
+  function toggleTrait(t: SelectedTrait) {
+    setSelectedTraits((prev) => {
+      const id = traitId(t);
+      return prev.some((p) => traitId(p) === id)
+        ? prev.filter((p) => traitId(p) !== id)
+        : [...prev, t];
     });
   }
 
@@ -73,7 +96,6 @@ export default function BurntPage() {
         </p>
       </section>
 
-      {/* Data-syncing notice: live supply couldn't be read this cycle. */}
       {stats && stats.diagnostics && !stats.diagnostics.supplyKnown && (
         <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
           Live burn data is still syncing from the indexer — showing the
@@ -81,7 +103,6 @@ export default function BurntPage() {
         </div>
       )}
 
-      {/* Burn progress */}
       <BurnProgress
         loading={loadingStats}
         burnPct={stats?.supply.burnPct ?? 0}
@@ -90,7 +111,7 @@ export default function BurntPage() {
       />
 
       {/* Stat cards */}
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           label="Original mint"
           value={fmt(stats?.collection.initialSupply)}
@@ -108,6 +129,13 @@ export default function BurntPage() {
           loading={loadingStats}
         />
         <StatCard
+          label="Unique burners"
+          value={fmt(stats?.uniqueBurners)}
+          accent="amber"
+          hint="distinct wallets"
+          loading={loadingStats}
+        />
+        <StatCard
           label="Still alive"
           value={fmt(stats?.supply.alive)}
           accent="emerald"
@@ -121,30 +149,56 @@ export default function BurntPage() {
         />
       </div>
 
-      {/* Leaderboard + gallery */}
+      {/* Leaderboards + gallery */}
       <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
-        <TopBurners
-          loading={loadingStats}
-          burners={stats?.topBurners ?? []}
-        />
+        <div className="space-y-6">
+          <TopBurners loading={loadingStats} burners={stats?.topBurners ?? []} />
+          <BurntTraitsBoard
+            loading={loadingTraits}
+            rows={traits?.leaderboard ?? []}
+            onPick={(row) =>
+              toggleTrait({ traitType: row.traitType, value: row.value })
+            }
+            selected={selectedTraits}
+          />
+        </div>
 
         <div>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex gap-1 rounded-lg border border-border/60 p-1">
-              {FILTERS.map((f) => (
-                <button
-                  key={f.key}
-                  onClick={() => setFilter(f.key)}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-sm transition-colors",
-                    filter === f.key
-                      ? "bg-ethereum-purple/15 text-ethereum-purple"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {f.label}
-                </button>
-              ))}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 rounded-lg border border-border/60 p-1">
+                {FILTERS.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setFilter(f.key)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-sm transition-colors",
+                      filter === f.key
+                        ? "bg-ethereum-purple/15 text-ethereum-purple"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setTraitsOpen(true)}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                  selectedTraits.length > 0
+                    ? "border-ethereum-purple/50 bg-ethereum-purple/10 text-ethereum-purple"
+                    : "border-border/60 text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Traits
+                {selectedTraits.length > 0 && (
+                  <span className="rounded-full bg-ethereum-purple/20 px-1.5 text-xs">
+                    {selectedTraits.length}
+                  </span>
+                )}
+              </button>
             </div>
             {selected.size > 0 && (
               <span className="text-sm text-muted-foreground">
@@ -153,15 +207,38 @@ export default function BurntPage() {
             )}
           </div>
 
+          {/* Active trait chips */}
+          {selectedTraits.length > 0 && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {selectedTraits.map((t) => (
+                <button
+                  key={traitId(t)}
+                  onClick={() => toggleTrait(t)}
+                  className="flex items-center gap-1.5 rounded-full border border-ethereum-purple/40 bg-ethereum-purple/10 px-3 py-1 text-xs text-ethereum-purple hover:bg-ethereum-purple/20"
+                >
+                  <span className="text-muted-foreground">{t.traitType}:</span>
+                  {t.value}
+                  <X className="h-3 w-3" />
+                </button>
+              ))}
+              <button
+                onClick={() => setSelectedTraits([])}
+                className="rounded-full px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
           <TokenGallery
             filter={filter}
+            traits={selectedTraits}
             selected={selected}
             onToggle={toggle}
           />
         </div>
       </div>
 
-      {/* Selection bar */}
       {selected.size > 0 && (
         <SelectionBar
           selected={selected}
@@ -170,6 +247,16 @@ export default function BurntPage() {
           onRemove={toggle}
         />
       )}
+
+      <TraitsDrawer
+        open={traitsOpen}
+        onClose={() => setTraitsOpen(false)}
+        loading={loadingTraits}
+        types={traits?.types ?? []}
+        selected={selectedTraits}
+        onToggle={toggleTrait}
+        onClear={() => setSelectedTraits([])}
+      />
     </div>
   );
 }
@@ -277,9 +364,7 @@ function TopBurners({
             ))}
           </div>
         ) : burners.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No burns recorded yet.
-          </p>
+          <p className="text-sm text-muted-foreground">No burns recorded yet.</p>
         ) : (
           <ol className="space-y-2.5">
             {burners.map((b, i) => (
@@ -312,12 +397,78 @@ function TopBurners({
   );
 }
 
+function BurntTraitsBoard({
+  loading,
+  rows,
+  onPick,
+  selected,
+}: {
+  loading: boolean;
+  rows: TraitLeaderRow[];
+  onPick: (row: TraitLeaderRow) => void;
+  selected: SelectedTrait[];
+}) {
+  const top = rows.slice(0, 12);
+  const isSel = (r: TraitLeaderRow) =>
+    selected.some((s) => s.traitType === r.traitType && s.value === r.value);
+  return (
+    <Card className="h-fit">
+      <CardContent className="p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <Flame className="h-4 w-4 text-amber-400" />
+          <h2 className="font-semibold">Most-burnt traits</h2>
+        </div>
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-6 w-full" />
+            ))}
+          </div>
+        ) : top.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No trait data yet.
+          </p>
+        ) : (
+          <ol className="space-y-2.5">
+            {top.map((r) => (
+              <li key={`${r.traitType}~${r.value}`}>
+                <button
+                  onClick={() => onPick(r)}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-sm transition-colors",
+                    isSel(r)
+                      ? "bg-ethereum-purple/10 text-ethereum-purple"
+                      : "hover:bg-white/[0.03]",
+                  )}
+                >
+                  <span className="min-w-0 truncate">
+                    <span className="truncate">{r.value}</span>{" "}
+                    <span className="text-xs text-muted-foreground">
+                      {r.traitType}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs">
+                    <span className="font-medium text-amber-400">{r.burnt}</span>
+                    <span className="text-muted-foreground">/{r.total}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function TokenGallery({
   filter,
+  traits,
   selected,
   onToggle,
 }: {
   filter: BurntStatus;
+  traits: SelectedTrait[];
   selected: Set<string>;
   onToggle: (id: string) => void;
 }) {
@@ -328,7 +479,7 @@ function TokenGallery({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useBurntTokens(filter);
+  } = useBurntTokens(filter, traits);
 
   const tokens = data?.pages.flatMap((p) => p.tokens) ?? [];
 
@@ -354,11 +505,13 @@ function TokenGallery({
   if (tokens.length === 0) {
     return (
       <EmptyState
-        title="Nothing here yet"
+        title="Nothing here"
         body={
-          filter === "burned"
-            ? "No tokens have been burnt to a dead address yet."
-            : "No tokens to show."
+          traits.length > 0
+            ? "No tokens match the selected traits in this view."
+            : filter === "burned"
+              ? "No tokens have been burnt yet."
+              : "No tokens to show."
         }
       />
     );
@@ -438,6 +591,183 @@ function TokenCard({
   );
 }
 
+function TraitsDrawer({
+  open,
+  onClose,
+  loading,
+  types,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  open: boolean;
+  onClose: () => void;
+  loading: boolean;
+  types: TraitType[];
+  selected: SelectedTrait[];
+  onToggle: (t: SelectedTrait) => void;
+  onClear: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const selectedIds = useMemo(
+    () => new Set(selected.map((s) => `${s.traitType}~${s.value}`)),
+    [selected],
+  );
+
+  const q = query.trim().toLowerCase();
+  const visible = useMemo(() => {
+    if (!q) return types;
+    return types
+      .map((t) => ({
+        ...t,
+        values: t.values.filter((v) =>
+          v.value.toLowerCase().includes(q) ||
+          t.traitType.toLowerCase().includes(q),
+        ),
+      }))
+      .filter((t) => t.values.length > 0);
+  }, [types, q]);
+
+  function toggleExpand(traitType: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(traitType)) next.delete(traitType);
+      else next.add(traitType);
+      return next;
+    });
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={cn(
+          "fixed inset-0 z-40 bg-black/50 transition-opacity",
+          open ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+      />
+      {/* Panel */}
+      <aside
+        className={cn(
+          "fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-l border-ethereum-purple/20 bg-background shadow-xl transition-transform duration-300",
+          open ? "translate-x-0" : "translate-x-full",
+        )}
+      >
+        <div className="flex items-center justify-between border-b border-border/60 p-4">
+          <h2 className="text-lg font-semibold">Traits</h2>
+          <div className="flex items-center gap-2">
+            {selected.length > 0 && (
+              <button
+                onClick={onClear}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Clear ({selected.length})
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="rounded-md p-1 text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="border-b border-border/60 p-3">
+          <div className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search traits"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : visible.length === 0 ? (
+            <p className="p-6 text-center text-sm text-muted-foreground">
+              No traits found.
+            </p>
+          ) : (
+            visible.map((t) => {
+              const isOpen = expanded.has(t.traitType) || q.length > 0;
+              return (
+                <div key={t.traitType} className="border-b border-border/40">
+                  <button
+                    onClick={() => toggleExpand(t.traitType)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-white/[0.02]"
+                  >
+                    <span className="font-medium capitalize">{t.traitType}</span>
+                    <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {t.distinctValues}
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 transition-transform",
+                          isOpen && "rotate-180",
+                        )}
+                      />
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <ul className="pb-2">
+                      {t.values.map((v) => {
+                        const id = `${t.traitType}~${v.value}`;
+                        const checked = selectedIds.has(id);
+                        return (
+                          <li key={id}>
+                            <button
+                              onClick={() =>
+                                onToggle({ traitType: t.traitType, value: v.value })
+                              }
+                              className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-white/[0.02]"
+                            >
+                              <span
+                                className={cn(
+                                  "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                                  checked
+                                    ? "border-ethereum-purple bg-ethereum-purple text-ethereum-black"
+                                    : "border-border",
+                                )}
+                              >
+                                {checked && <span className="text-[10px]">✓</span>}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">
+                                {v.value}
+                              </span>
+                              {v.burnt > 0 && (
+                                <span className="shrink-0 text-xs text-amber-400">
+                                  {v.burnt}🔥
+                                </span>
+                              )}
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                {v.count}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}
+
 function SelectionBar({
   selected,
   collectionAddress,
@@ -461,9 +791,7 @@ function SelectionBar({
             <a
               key={id}
               href={
-                collectionAddress
-                  ? explorerTokenUrl(collectionAddress, id)
-                  : "#"
+                collectionAddress ? explorerTokenUrl(collectionAddress, id) : "#"
               }
               target="_blank"
               rel="noreferrer"
