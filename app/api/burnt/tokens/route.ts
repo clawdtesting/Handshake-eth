@@ -4,10 +4,45 @@ import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { BURNT_COLLECTION_ADDRESS } from "@/lib/burnt/config";
 import { getBurntStats } from "@/lib/burnt/stats";
 import { nftBase } from "@/lib/burnt/alchemy";
+import { attributesOf, getBurntTraitMap } from "@/lib/burnt/traits";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 48;
+// When filtering by trait, matches are sparse, so scan a wider contract page
+// and walk several pages until we've gathered a screenful.
+const SCAN_LIMIT = 100;
+const MAX_SCAN_PAGES = 8;
+
+type TraitFilters = Map<string, Set<string>>;
+
+/** Selected traits as `t=<type>~<value>` params → type → allowed values. */
+function parseTraitFilters(params: URLSearchParams): TraitFilters {
+  const map: TraitFilters = new Map();
+  for (const raw of params.getAll("t")) {
+    const sep = raw.indexOf("~");
+    if (sep < 0) continue;
+    const type = raw.slice(0, sep);
+    const value = raw.slice(sep + 1);
+    if (!type || !value) continue;
+    if (!map.has(type)) map.set(type, new Set());
+    map.get(type)!.add(value);
+  }
+  return map;
+}
+
+/** OR within a trait type, AND across types (OpenSea semantics). */
+function matchesTraits(
+  attrs: { traitType: string; value: string }[],
+  filters: TraitFilters,
+): boolean {
+  for (const [type, values] of filters) {
+    if (!attrs.some((a) => a.traitType === type && values.has(a.value))) {
+      return false;
+    }
+  }
+  return true;
+}
 
 interface BurntToken {
   tokenId: string;
@@ -90,37 +125,55 @@ async function burnedPage(
   return { tokens, pageKey: next < ids.length ? String(next) : null };
 }
 
+function toToken(raw: any, deadSet: Set<string>): BurntToken {
+  const tokenId = String(raw?.tokenId ?? "");
+  return {
+    tokenId,
+    name: nameOf(raw, tokenId),
+    image: imageOf(raw),
+    status: deadSet.has(tokenId) ? "burned" : "alive",
+  };
+}
+
 /**
  * "all"/"alive" view: page through the live contract supply and tag each token
- * by whether its id sits in a burn sink.
+ * by whether its id sits in a burn sink. When trait filters are active, matches
+ * are sparse, so walk several contract pages until a screenful is gathered.
  */
 async function contractPage(
   deadSet: Set<string>,
   aliveOnly: boolean,
+  filters: TraitFilters,
   pageKey: string | null,
 ): Promise<{ tokens: BurntToken[]; pageKey: string | null }> {
-  const params = new URLSearchParams({
-    contractAddress: BURNT_COLLECTION_ADDRESS,
-    withMetadata: "true",
-    limit: String(PAGE_SIZE),
-  });
-  if (pageKey) params.set("startToken", pageKey);
+  const hasFilters = filters.size > 0;
+  const limit = hasFilters ? SCAN_LIMIT : PAGE_SIZE;
+  const maxPages = hasFilters ? MAX_SCAN_PAGES : 1;
 
-  const data = await getJson(`${nftBase()}/getNFTsForContract?${params}`);
+  const matched: BurntToken[] = [];
+  let cursor = pageKey;
 
-  let tokens: BurntToken[] = (data?.nfts ?? []).map((raw: any) => {
-    const tokenId = String(raw?.tokenId ?? "");
-    return {
-      tokenId,
-      name: nameOf(raw, tokenId),
-      image: imageOf(raw),
-      status: deadSet.has(tokenId) ? "burned" : "alive",
-    } as BurntToken;
-  });
+  for (let page = 0; page < maxPages; page++) {
+    const params = new URLSearchParams({
+      contractAddress: BURNT_COLLECTION_ADDRESS,
+      withMetadata: "true",
+      limit: String(limit),
+    });
+    if (cursor) params.set("startToken", cursor);
 
-  if (aliveOnly) tokens = tokens.filter((t) => t.status === "alive");
+    const data = await getJson(`${nftBase()}/getNFTsForContract?${params}`);
+    for (const raw of data?.nfts ?? []) {
+      const token = toToken(raw, deadSet);
+      if (aliveOnly && token.status !== "alive") continue;
+      if (hasFilters && !matchesTraits(attributesOf(raw), filters)) continue;
+      matched.push(token);
+    }
 
-  return { tokens, pageKey: data?.pageKey ?? null };
+    cursor = data?.pageKey ?? null;
+    if (!cursor || matched.length >= PAGE_SIZE) break;
+  }
+
+  return { tokens: matched, pageKey: cursor };
 }
 
 const querySchema = z.object({
@@ -145,13 +198,28 @@ export async function GET(req: Request) {
 
   try {
     const { status, pageKey } = parsed.data;
+    const filters = parseTraitFilters(searchParams);
     const stats = await getBurntStats();
     const deadSet = new Set(stats.deadHeldTokenIds);
 
-    const result =
-      status === "burned"
-        ? await burnedPage(stats.deadHeldTokenIds, pageKey ?? null)
-        : await contractPage(deadSet, status === "alive", pageKey ?? null);
+    let result: { tokens: BurntToken[]; pageKey: string | null };
+    if (status === "burned") {
+      // Authoritative burnt set (incl. zero-address burns). When traits are
+      // selected, narrow the id list up front so pagination stays exact.
+      let ids = stats.burntTokenIds;
+      if (filters.size > 0) {
+        const traitMap = await getBurntTraitMap();
+        ids = ids.filter((id) => matchesTraits(traitMap.get(id) ?? [], filters));
+      }
+      result = await burnedPage(ids, pageKey ?? null);
+    } else {
+      result = await contractPage(
+        deadSet,
+        status === "alive",
+        filters,
+        pageKey ?? null,
+      );
+    }
 
     return NextResponse.json(result);
   } catch (err) {

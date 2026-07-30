@@ -89,6 +89,10 @@ export interface BurntStats {
   burnAddresses: string[];
   /** Token ids currently parked in a burn sink, ascending. */
   deadHeldTokenIds: string[];
+  /** Every token id ever burned (to any sink, incl. zero-address burns). */
+  burntTokenIds: string[];
+  /** Distinct wallets that have burned at least one token. */
+  uniqueBurners: number;
   /** Wallets ranked by how many tokens they've sent to a sink. */
   topBurners: { address: string; count: number }[];
   updatedAt: number;
@@ -168,9 +172,24 @@ async function getDeadHeldTokenIds(): Promise<{
   return { deadHeldIds, existingCount: existing };
 }
 
-/** Aggregate senders of tokens into every burn sink into a leaderboard. */
-async function getTopBurners(): Promise<{ address: string; count: number }[]> {
+interface BurnScan {
+  /** Wallets ranked by how many tokens they sent to a sink. */
+  topBurners: { address: string; count: number }[];
+  /** Distinct wallets that have burned at least one token. */
+  uniqueBurners: number;
+  /** Every token id ever sent to a sink (authoritative burnt set). */
+  burntTokenIds: string[];
+}
+
+/**
+ * One pass over every burn-sink's inbound ERC-721 transfers. It's the single
+ * source for the leaderboard, the unique-burner count, and the burnt token-id
+ * set (which includes real `_burn`s to the zero address, not just dead-held
+ * tokens) — so traits of burnt tokens can be resolved from these ids.
+ */
+async function scanBurns(): Promise<BurnScan> {
   const counts = new Map<string, number>();
+  const burntIds = new Set<string>();
 
   for (const sink of BURN_ADDRESSES) {
     let pageKey: string | undefined;
@@ -190,6 +209,8 @@ async function getTopBurners(): Promise<{ address: string; count: number }[]> {
       ]);
 
       for (const t of result?.transfers ?? []) {
+        const id = tokenIdToDecimal(t?.erc721TokenId ?? t?.tokenId);
+        if (id !== null) burntIds.add(id);
         const from = (t?.from ?? "").toLowerCase();
         // A mint is a transfer FROM zero; that isn't someone burning.
         if (!from || isBurnAddress(from)) continue;
@@ -201,10 +222,13 @@ async function getTopBurners(): Promise<{ address: string; count: number }[]> {
     }
   }
 
-  return Array.from(counts.entries())
+  const topBurners = Array.from(counts.entries())
     .map(([address, count]) => ({ address, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 25);
+
+  const burntTokenIds = Array.from(burntIds).sort((a, b) => Number(a) - Number(b));
+  return { topBurners, uniqueBurners: counts.size, burntTokenIds };
 }
 
 function tokenIdToDecimal(tokenId: unknown): string | null {
@@ -226,10 +250,10 @@ export async function getBurntStats(): Promise<BurntStats> {
   // Each source is isolated: a failure in one (a rate-limited endpoint, a
   // collection the indexer hasn't ingested) records a diagnostic but never
   // blanks the whole page. Original mint always renders from config.
-  const [metaR, heldR, burnersR] = await Promise.allSettled([
+  const [metaR, heldR, scanR] = await Promise.allSettled([
     getContractMeta(),
     getDeadHeldTokenIds(),
-    getTopBurners(),
+    scanBurns(),
   ]);
 
   const meta =
@@ -244,10 +268,12 @@ export async function getBurntStats(): Promise<BurntStats> {
       : (errors.push(errMsg(heldR.reason)),
         { deadHeldIds: [] as string[], existingCount: 0, ok: false });
 
-  const topBurners =
-    burnersR.status === "fulfilled"
-      ? burnersR.value
-      : (errors.push(errMsg(burnersR.reason)), []);
+  const scan: BurnScan =
+    scanR.status === "fulfilled"
+      ? scanR.value
+      : (errors.push(errMsg(scanR.reason)),
+        { topBurners: [], uniqueBurners: 0, burntTokenIds: [] });
+  const { topBurners, uniqueBurners, burntTokenIds } = scan;
 
   const initialSupply = BURNT_INITIAL_SUPPLY;
   // Live supply is "known" only if the contract reported totalSupply or we
@@ -275,6 +301,8 @@ export async function getBurntStats(): Promise<BurntStats> {
     supply: { current, burnedToDead, trueBurned, totalBurned, alive, burnPct },
     burnAddresses: [...BURN_ADDRESSES],
     deadHeldTokenIds: held.deadHeldIds,
+    burntTokenIds,
+    uniqueBurners,
     topBurners,
     updatedAt: Date.now(),
     diagnostics: {

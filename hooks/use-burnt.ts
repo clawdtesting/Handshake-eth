@@ -20,6 +20,8 @@ export interface BurntStats {
   };
   burnAddresses: string[];
   deadHeldTokenIds: string[];
+  burntTokenIds: string[];
+  uniqueBurners: number;
   topBurners: { address: string; count: number }[];
   updatedAt: number;
   diagnostics?: {
@@ -57,18 +59,64 @@ export function useBurntStats() {
   });
 }
 
-export function useBurntTokens(status: BurntStatus) {
+/** A selected trait, e.g. { traitType: "eyes", value: "Laser" }. */
+export interface SelectedTrait {
+  traitType: string;
+  value: string;
+}
+
+function traitParams(traits: SelectedTrait[]): string[] {
+  return traits.map((t) => `${t.traitType}~${t.value}`);
+}
+
+export function useBurntTokens(status: BurntStatus, traits: SelectedTrait[] = []) {
+  // Stable key independent of selection order.
+  const traitKey = traitParams(traits).sort().join("|");
   return useInfiniteQuery({
-    queryKey: ["burnt-tokens", status],
+    queryKey: ["burnt-tokens", status, traitKey],
     staleTime: 60_000,
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ status });
       if (pageParam) params.set("pageKey", pageParam);
+      for (const t of traitParams(traits)) params.append("t", t);
       return fetchJson<{ tokens: BurntToken[]; pageKey: string | null }>(
         `/api/burnt/tokens?${params}`,
       );
     },
     getNextPageParam: (last) => last.pageKey,
+  });
+}
+
+export interface TraitValue {
+  value: string;
+  count: number;
+  burnt: number;
+}
+export interface TraitType {
+  traitType: string;
+  distinctValues: number;
+  values: TraitValue[];
+}
+export interface TraitLeaderRow {
+  traitType: string;
+  value: string;
+  burnt: number;
+  total: number;
+  burntPct: number;
+}
+export interface BurntTraits {
+  types: TraitType[];
+  leaderboard: TraitLeaderRow[];
+  sampled: number;
+  burntTotal: number;
+  error: string | null;
+}
+
+export function useBurntTraits() {
+  return useQuery({
+    queryKey: ["burnt-traits"],
+    staleTime: 5 * 60_000,
+    queryFn: () => fetchJson<BurntTraits>("/api/burnt/traits"),
   });
 }
