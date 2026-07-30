@@ -58,3 +58,45 @@
     }
   }
 }
+
+@layer utilities {
+  /* Combat arena sprite animations. Idle bob loops; the lunge/shake/hop
+     transforms are applied per-event via the Web Animations API on an inner
+     layer, so they compose with this bob rather than fight it. */
+  @keyframes combat-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+  .combat-idle {
+    animation: combat-bob 2.4s ease-in-out infinite;
+  }
+
+  @keyframes combat-float {
+    0% {
+      transform: translateY(0) scale(0.9);
+      opacity: 0;
+    }
+    20% {
+      transform: translateY(-6px) scale(1.1);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-46px) scale(1);
+      opacity: 0;
+    }
+  }
+  .combat-float {
+    animation: combat-float 800ms ease-out forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .combat-idle {
+      animation: none;
+    }
+  }
+}
