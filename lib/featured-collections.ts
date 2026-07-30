@@ -127,18 +127,21 @@ export const FEATURED_COLLECTIONS: FeaturedCollection[] = [
   // is only a fallback for when metadata has no image. No local logo file is
   // pinned so the collection's real imagery is always used.
   //
-  // On-chain transfer-validator (ERC721-C) status for this address could not be
-  // verified from this environment, so it is left ungated (transferValidator
-  // omitted) and NOT marked settlementApproved. Confirm the validator status on
-  // mainnet before launch and set these fields from verified facts.
+  // T00ns enforces an on-chain transfer validator (ERC721-C / Creator Token
+  // Standard), so the collection owner must authorise Handshake's settlement
+  // contract on the validator before any trade can settle. That approval is not
+  // in place yet, so `settlementApproved` is intentionally omitted — the
+  // collection shows as "pending" (yellow: one approval missing) until the
+  // owner approves. Flip `settlementApproved: true` once that's done.
   {
     name: "T00ns",
     address: "0x902d94ba5bfc0cb408d1a6ca4b8f255d845e50e9",
     image: "/Logomark.svg",
-    // Curated display override: show T00ns as allowlisted (green) ahead of the
-    // settlement contract being deployed. DISPLAY ONLY — on-chain settlement
-    // still enforces the real allowlist. Remove once the live isCollectionAllowed
-    // read is authoritative.
+    // Validator-gated and not yet approved → validator condition is unmet.
+    transferValidator: true,
+    // Curated display override for the Handshake allowlist half only. DISPLAY
+    // ONLY — on-chain settlement still enforces the real allowlist. Remove once
+    // the live isCollectionAllowed read is authoritative.
     allowlisted: true,
   },
 ];

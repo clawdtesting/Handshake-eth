@@ -75,14 +75,15 @@ describe("collectionTradeStatus", () => {
     ).toBe("pending");
   });
 
-  it("with no live signals: gated → locked, allowlisted → open, else pending", () => {
+  it("with no live signals: status follows the two curated approval flags", () => {
     for (const c of FEATURED_COLLECTIONS) {
       const status = collectionTradeStatus(c);
-      const expected = c.transferValidator
-        ? "locked"
-        : c.allowlisted
-          ? "open"
-          : "pending";
+      // Validator condition met when un-gated or explicitly settlement-approved;
+      // Handshake condition met via the curated allowlist override.
+      const validatorOk = !c.transferValidator || c.settlementApproved === true;
+      const handshakeOk = c.allowlisted === true;
+      const met = (validatorOk ? 1 : 0) + (handshakeOk ? 1 : 0);
+      const expected = met === 2 ? "open" : met === 1 ? "pending" : "locked";
       expect(status).toBe(expected);
     }
   });
