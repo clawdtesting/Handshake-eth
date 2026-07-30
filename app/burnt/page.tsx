@@ -73,6 +73,14 @@ export default function BurntPage() {
         </p>
       </section>
 
+      {/* Data-syncing notice: live supply couldn't be read this cycle. */}
+      {stats && stats.diagnostics && !stats.diagnostics.supplyKnown && (
+        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          Live burn data is still syncing from the indexer — showing the
+          original mint for now. Refresh in a moment.
+        </div>
+      )}
+
       {/* Burn progress */}
       <BurnProgress
         loading={loadingStats}
