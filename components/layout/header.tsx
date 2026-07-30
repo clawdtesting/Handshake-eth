@@ -12,6 +12,7 @@ const links = [
   { href: "/create", label: "Deal" },
   { href: "/wanted", label: "Wanted" },
   { href: "/burnt", label: "Burnt" },
+  { href: "/combat", label: "Combat" },
   { href: "/account", label: "Dashboard" },
   { href: "/about", label: "About" },
 ];
