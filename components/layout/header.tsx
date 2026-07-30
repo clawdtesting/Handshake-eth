@@ -11,6 +11,7 @@ const links = [
   { href: "/market", label: "Market" },
   { href: "/create", label: "Deal" },
   { href: "/wanted", label: "Wanted" },
+  { href: "/burnt", label: "Burnt" },
   { href: "/account", label: "Dashboard" },
   { href: "/about", label: "About" },
 ];
