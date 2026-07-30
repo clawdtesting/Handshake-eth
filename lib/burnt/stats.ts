@@ -40,13 +40,22 @@ function rpcUrl(): string {
   return `https://${RPC_NETWORK}.g.alchemy.com/v2/${key}`;
 }
 
+// Which Alchemy REST endpoint a URL is hitting, for readable diagnostics that
+// never include the API key.
+function endpointOf(url: string): string {
+  return url.split("/nft/v3/")[1]?.split("?")[0]?.split("/").pop() ?? "request";
+}
+
 async function getJson(url: string): Promise<any> {
   const res = await fetch(url, {
     headers: { accept: "application/json" },
     next: { revalidate: 30 },
   });
   if (!res.ok) {
-    throw new Error(`Alchemy request failed: ${res.status}`);
+    const detail = (await res.text().catch(() => "")).slice(0, 200);
+    throw new Error(
+      `${endpointOf(url)} → ${res.status}${detail ? `: ${detail}` : ""}`,
+    );
   }
   return res.json();
 }
@@ -58,10 +67,17 @@ async function rpc(method: string, params: unknown[]): Promise<any> {
     body: JSON.stringify({ id: 1, jsonrpc: "2.0", method, params }),
     next: { revalidate: 30 },
   });
-  if (!res.ok) throw new Error(`Alchemy RPC failed: ${res.status}`);
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => "")).slice(0, 200);
+    throw new Error(`${method} → ${res.status}${detail ? `: ${detail}` : ""}`);
+  }
   const body = await res.json();
-  if (body.error) throw new Error(body.error.message ?? "Alchemy RPC error");
+  if (body.error) throw new Error(`${method}: ${body.error.message ?? "RPC error"}`);
   return body.result;
+}
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }
 
 export interface BurntStats {
@@ -92,6 +108,18 @@ export interface BurntStats {
   /** Wallets ranked by how many tokens they've sent to a sink. */
   topBurners: { address: string; count: number }[];
   updatedAt: number;
+  /**
+   * Non-sensitive health info: whether a key is configured, the resolved
+   * hosts, whether live supply was actually read, and any per-call failures.
+   * Surfaced via `/api/burnt?debug=1`. Never contains the API key.
+   */
+  diagnostics: {
+    hasKey: boolean;
+    nftNetwork: string;
+    rpcNetwork: string;
+    supplyKnown: boolean;
+    errors: string[];
+  };
 }
 
 // A single burn tracker for one collection: a short shared cache keeps the
@@ -108,20 +136,16 @@ async function getContractMeta(): Promise<{
   image: string | null;
   totalSupply: number | null;
 }> {
-  try {
-    const data = await getJson(
-      `${nftBase()}/getContractMetadata?contractAddress=${BURNT_COLLECTION_ADDRESS}`,
-    );
-    const total = Number(data?.totalSupply);
-    return {
-      name: data?.name ?? data?.openSeaMetadata?.collectionName ?? null,
-      symbol: data?.symbol ?? null,
-      image: data?.openSeaMetadata?.imageUrl ?? data?.image?.cachedUrl ?? null,
-      totalSupply: Number.isFinite(total) ? total : null,
-    };
-  } catch {
-    return { name: null, symbol: null, image: null, totalSupply: null };
-  }
+  const data = await getJson(
+    `${nftBase()}/getContractMetadata?contractAddress=${BURNT_COLLECTION_ADDRESS}`,
+  );
+  const total = Number(data?.totalSupply);
+  return {
+    name: data?.name ?? data?.openSeaMetadata?.collectionName ?? null,
+    symbol: data?.symbol ?? null,
+    image: data?.openSeaMetadata?.imageUrl ?? data?.image?.cachedUrl ?? null,
+    totalSupply: Number.isFinite(total) ? total : null,
+  };
 }
 
 /** Walk getOwnersForContract, collecting the ids each burn sink holds. */
@@ -213,16 +237,40 @@ function tokenIdToDecimal(tokenId: unknown): string | null {
 export async function getBurntStats(): Promise<BurntStats> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.value;
 
-  const [meta, held, topBurners] = await Promise.all([
+  const errors: string[] = [];
+
+  // Each source is isolated: a failure in one (a rate-limited endpoint, a
+  // collection the indexer hasn't ingested) records a diagnostic but never
+  // blanks the whole page. Original mint always renders from config.
+  const [metaR, heldR, burnersR] = await Promise.allSettled([
     getContractMeta(),
     getDeadHeldTokenIds(),
-    getTopBurners().catch(() => [] as { address: string; count: number }[]),
+    getTopBurners(),
   ]);
 
+  const meta =
+    metaR.status === "fulfilled"
+      ? metaR.value
+      : (errors.push(errMsg(metaR.reason)),
+        { name: null, symbol: null, image: null, totalSupply: null });
+
+  const held =
+    heldR.status === "fulfilled"
+      ? { ...heldR.value, ok: true }
+      : (errors.push(errMsg(heldR.reason)),
+        { deadHeldIds: [] as string[], existingCount: 0, ok: false });
+
+  const topBurners =
+    burnersR.status === "fulfilled"
+      ? burnersR.value
+      : (errors.push(errMsg(burnersR.reason)), []);
+
   const initialSupply = BURNT_INITIAL_SUPPLY;
-  // Prefer the live totalSupply when the contract reports it; otherwise fall
-  // back to the count enumerated from owners.
-  const current = meta.totalSupply ?? held.existingCount;
+  // Live supply is "known" only if the contract reported totalSupply or we
+  // successfully enumerated owners. When it's unknown we must NOT infer that
+  // everything burned — fall back to the original mint (0% burnt, pending).
+  const supplyKnown = meta.totalSupply !== null || held.ok;
+  const current = meta.totalSupply ?? (held.ok ? held.existingCount : initialSupply);
   const burnedToDead = held.deadHeldIds.length;
   const trueBurned = Math.max(0, initialSupply - current);
   const totalBurned = Math.min(initialSupply, trueBurned + burnedToDead);
@@ -245,9 +293,18 @@ export async function getBurntStats(): Promise<BurntStats> {
     deadHeldTokenIds: held.deadHeldIds,
     topBurners,
     updatedAt: Date.now(),
+    diagnostics: {
+      hasKey: !!process.env.ALCHEMY_API_KEY,
+      nftNetwork: ALCHEMY_NETWORK,
+      rpcNetwork: RPC_NETWORK,
+      supplyKnown,
+      errors,
+    },
   };
 
-  cache = { at: Date.now(), value };
+  // Only cache a fully-healthy result. A transient failure (rate limit, cold
+  // indexer) shouldn't be pinned for 60s — let the next request retry.
+  if (errors.length === 0) cache = { at: Date.now(), value };
   return value;
 }
 

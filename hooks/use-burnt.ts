@@ -22,6 +22,13 @@ export interface BurntStats {
   deadHeldTokenIds: string[];
   topBurners: { address: string; count: number }[];
   updatedAt: number;
+  diagnostics?: {
+    hasKey: boolean;
+    nftNetwork: string;
+    rpcNetwork: string;
+    supplyKnown: boolean;
+    errors: string[];
+  };
 }
 
 export type BurntStatus = "all" | "alive" | "burned";
