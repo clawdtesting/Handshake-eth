@@ -17,6 +17,7 @@ import {
   useBurntStats,
   useBurntTokens,
   useBurntTraits,
+  useBurntTokenLookup,
   type BurntStatus,
   type BurntToken,
   type SelectedTrait,
@@ -47,6 +48,13 @@ export default function BurntPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [traitsOpen, setTraitsOpen] = useState(false);
   const [selectedTraits, setSelectedTraits] = useState<SelectedTrait[]>([]);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchId, setSearchId] = useState<string | null>(null);
+
+  function submitSearch() {
+    const id = searchInput.trim().replace(/^#/, "");
+    setSearchId(/^\d{1,10}$/.test(id) ? id : null);
+  }
 
   const collectionName = stats?.collection.name ?? "the collection";
   const collectionAddress = stats?.collection.address ?? "";
@@ -147,6 +155,45 @@ export default function BurntPage() {
           accent="amber"
           loading={loadingStats}
         />
+      </div>
+
+      {/* Token ID lookup */}
+      <div className="mt-8">
+        <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/60 px-4 py-2">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitSearch()}
+            inputMode="numeric"
+            placeholder="Check a token ID — e.g. 3458"
+            className="w-full bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground"
+          />
+          {(searchInput || searchId) && (
+            <button
+              onClick={() => {
+                setSearchInput("");
+                setSearchId(null);
+              }}
+              className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            onClick={submitSearch}
+            className="shrink-0 rounded-md bg-ethereum-purple/15 px-3 py-1.5 text-sm text-ethereum-purple hover:bg-ethereum-purple/25"
+          >
+            Look up
+          </button>
+        </div>
+        {searchId && (
+          <TokenLookupResult
+            id={searchId}
+            collectionAddress={collectionAddress}
+          />
+        )}
       </div>
 
       {/* Leaderboards + gallery */}
@@ -511,6 +558,94 @@ function BurntTraitsBoard({
             ))}
           </ol>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TokenLookupResult({
+  id,
+  collectionAddress,
+}: {
+  id: string;
+  collectionAddress: string;
+}) {
+  const { data, isLoading, isError } = useBurntTokenLookup(id);
+
+  if (isLoading) {
+    return (
+      <Card className="mt-3">
+        <CardContent className="flex gap-4 p-4">
+          <Skeleton className="h-24 w-24 shrink-0 rounded-lg" />
+          <div className="flex-1 space-y-2 py-1">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError || !data || data.exists === false) {
+    return (
+      <Card className="mt-3">
+        <CardContent className="p-4 text-sm text-muted-foreground">
+          No token <span className="font-medium text-foreground">#{id}</span>{" "}
+          found in this collection.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const burned = data.status === "burnt";
+  return (
+    <Card className="mt-3">
+      <CardContent className="flex gap-4 p-4">
+        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-white/[0.03]">
+          <NFTMedia
+            imageUrl={data.image ?? null}
+            alt={data.name ?? `#${id}`}
+            className={cn("h-full w-full object-cover", burned && "grayscale")}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate font-semibold">
+              {data.name ?? `#${id}`}
+            </span>
+            <Badge variant={burned ? "destructive" : "success"}>
+              {burned ? "Burnt" : "Alive"}
+            </Badge>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Token #{id}
+            {data.owner ? ` · held by ${shortAddress(data.owner)}` : ""}
+          </p>
+          {data.traits && data.traits.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {data.traits.map((t) => (
+                <span
+                  key={`${t.traitType}~${t.value}`}
+                  className="rounded-full border border-border/60 px-2 py-0.5 text-xs"
+                >
+                  <span className="text-muted-foreground">{t.traitType}:</span>{" "}
+                  {t.value}
+                </span>
+              ))}
+            </div>
+          )}
+          {collectionAddress && (
+            <a
+              href={explorerTokenUrl(collectionAddress, id)}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-block text-xs text-ethereum-purple hover:underline"
+            >
+              View on Etherscan →
+            </a>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
