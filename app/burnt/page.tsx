@@ -155,7 +155,7 @@ export default function BurntPage() {
           <TopBurners loading={loadingStats} burners={stats?.topBurners ?? []} />
           <BurntTraitsBoard
             loading={loadingTraits}
-            rows={traits?.leaderboard ?? []}
+            types={traits?.types ?? []}
             onPick={(row) =>
               toggleTrait({ traitType: row.traitType, value: row.value })
             }
@@ -399,18 +399,46 @@ function TopBurners({
 
 function BurntTraitsBoard({
   loading,
-  rows,
+  types,
   onPick,
   selected,
 }: {
   loading: boolean;
-  rows: TraitLeaderRow[];
+  types: TraitType[];
   onPick: (row: TraitLeaderRow) => void;
   selected: SelectedTrait[];
 }) {
-  const top = rows.slice(0, 12);
+  const [typeFilter, setTypeFilter] = useState<string>("All");
+
+  // The selected type isn't in the data yet on first load; fall back to All.
+  const activeType =
+    typeFilter === "All" || types.some((t) => t.traitType === typeFilter)
+      ? typeFilter
+      : "All";
+
+  const rows: TraitLeaderRow[] = useMemo(() => {
+    const src =
+      activeType === "All"
+        ? types
+        : types.filter((t) => t.traitType === activeType);
+    return src
+      .flatMap((t) =>
+        t.values.map((v) => ({
+          traitType: t.traitType,
+          value: v.value,
+          burnt: v.burnt,
+          total: v.count,
+          burntPct: v.count > 0 ? Math.round((v.burnt / v.count) * 1000) / 10 : 0,
+        })),
+      )
+      .filter((r) => r.burnt > 0)
+      .sort((a, b) => b.burntPct - a.burntPct || b.burnt - a.burnt)
+      .slice(0, 12);
+  }, [types, activeType]);
+
   const isSel = (r: TraitLeaderRow) =>
     selected.some((s) => s.traitType === r.traitType && s.value === r.value);
+
   return (
     <Card className="h-fit">
       <CardContent className="p-5">
@@ -418,19 +446,40 @@ function BurntTraitsBoard({
           <Flame className="h-4 w-4 text-amber-400" />
           <h2 className="font-semibold">Most-burnt traits</h2>
         </div>
+
+        {/* Trait-type selector — narrows the ranking to one category. */}
+        <div className="relative mb-3">
+          <select
+            value={activeType}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            disabled={loading || types.length === 0}
+            className="w-full appearance-none rounded-lg border border-border/60 bg-transparent py-2 pl-3 pr-8 text-sm capitalize outline-none focus:border-ethereum-purple/50 disabled:opacity-50"
+          >
+            <option value="All">All traits</option>
+            {types.map((t) => (
+              <option key={t.traitType} value={t.traitType}>
+                {t.traitType}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        </div>
+
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-6 w-full" />
             ))}
           </div>
-        ) : top.length === 0 ? (
+        ) : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No trait data yet.
+            {activeType === "All"
+              ? "No trait data yet."
+              : `No burnt ${activeType} yet.`}
           </p>
         ) : (
           <ol className="space-y-2.5">
-            {top.map((r) => (
+            {rows.map((r) => (
               <li key={`${r.traitType}~${r.value}`}>
                 <button
                   onClick={() => onPick(r)}
@@ -443,9 +492,11 @@ function BurntTraitsBoard({
                 >
                   <span className="min-w-0 truncate">
                     <span className="truncate">{r.value}</span>{" "}
-                    <span className="text-xs text-muted-foreground">
-                      {r.traitType}
-                    </span>
+                    {activeType === "All" && (
+                      <span className="text-xs text-muted-foreground">
+                        {r.traitType}
+                      </span>
+                    )}
                   </span>
                   <span className="flex shrink-0 items-baseline gap-1.5 text-xs">
                     <span className="font-semibold text-amber-400">
