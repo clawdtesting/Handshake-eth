@@ -26,6 +26,15 @@ import {
 } from "@/hooks/use-burnt";
 import { explorerAddressUrl, explorerTokenUrl } from "@/lib/chains/ethereum";
 import { cn, shortAddress } from "@/lib/utils";
+import { formatDistanceToNowStrict } from "date-fns";
+
+function timeAgo(ts: string | null): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : formatDistanceToNowStrict(d, { addSuffix: true });
+}
 
 const FILTERS: { key: BurntStatus; label: string }[] = [
   { key: "all", label: "All" },
@@ -199,6 +208,11 @@ export default function BurntPage() {
       {/* Leaderboards + gallery */}
       <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
         <div className="space-y-6">
+          <LatestBurns
+            loading={loadingStats}
+            burns={stats?.recentBurns ?? []}
+            collectionAddress={collectionAddress}
+          />
           <TopBurners loading={loadingStats} burners={stats?.topBurners ?? []} />
           <BurntTraitsBoard
             loading={loadingTraits}
@@ -384,6 +398,80 @@ function StatCard({
         )}
         {hint && !loading && (
           <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LatestBurns({
+  loading,
+  burns,
+  collectionAddress,
+}: {
+  loading: boolean;
+  burns: {
+    tokenId: string;
+    from: string;
+    timestamp: string | null;
+    name: string | null;
+    image: string | null;
+  }[];
+  collectionAddress: string;
+}) {
+  return (
+    <Card className="h-fit">
+      <CardContent className="p-5">
+        <div className="mb-3 flex items-center gap-2">
+          <Flame className="h-4 w-4 text-amber-400" />
+          <h2 className="font-semibold">Latest burns</h2>
+        </div>
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : burns.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No burns recorded yet.</p>
+        ) : (
+          <ul className="space-y-2.5">
+            {burns.map((b) => (
+              <li key={`${b.tokenId}-${b.timestamp ?? ""}`}>
+                <a
+                  href={
+                    collectionAddress
+                      ? explorerTokenUrl(collectionAddress, b.tokenId)
+                      : "#"
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex items-center gap-2.5"
+                >
+                  <span className="h-9 w-9 shrink-0 overflow-hidden rounded-md bg-white/[0.03] grayscale">
+                    <NFTMedia
+                      imageUrl={b.image}
+                      alt={b.name ?? `#${b.tokenId}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium group-hover:text-ethereum-purple">
+                      {b.name ?? `#${b.tokenId}`}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      by {shortAddress(b.from)}
+                    </span>
+                  </span>
+                  {b.timestamp && (
+                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                      {timeAgo(b.timestamp)}
+                    </span>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
     </Card>

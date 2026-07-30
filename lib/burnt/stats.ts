@@ -64,6 +64,56 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
+async function postJson(url: string, body: unknown): Promise<any> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify(body),
+    next: { revalidate: 30 },
+  });
+  if (!res.ok) throw new Error(`getNFTMetadataBatch → ${res.status}`);
+  return res.json();
+}
+
+function recentImageOf(raw: any): string | null {
+  return (
+    raw?.image?.cachedUrl ??
+    raw?.image?.thumbnailUrl ??
+    raw?.image?.originalUrl ??
+    raw?.image?.pngUrl ??
+    null
+  );
+}
+
+/** Attach name/image to the latest burns via a single metadata batch. */
+async function enrichRecent(events: BurnEvent[]): Promise<BurntStats["recentBurns"]> {
+  if (events.length === 0) return [];
+  const data = await postJson(`${nftBase()}/getNFTMetadataBatch`, {
+    tokens: events.map((e) => ({
+      contractAddress: BURNT_COLLECTION_ADDRESS,
+      tokenId: e.tokenId,
+    })),
+    refreshCache: false,
+  });
+  const byId = new Map<string, any>();
+  for (const nft of data?.nfts ?? []) byId.set(String(nft?.tokenId ?? ""), nft);
+
+  return events.map((e) => {
+    const raw = byId.get(e.tokenId);
+    const rawName = raw?.name ?? raw?.raw?.metadata?.name;
+    return {
+      tokenId: e.tokenId,
+      from: e.from,
+      timestamp: e.timestamp,
+      name:
+        typeof rawName === "string" && rawName.trim()
+          ? rawName.trim()
+          : `#${e.tokenId}`,
+      image: raw ? recentImageOf(raw) : null,
+    };
+  });
+}
+
 export interface BurntStats {
   collection: {
     address: string;
@@ -95,6 +145,14 @@ export interface BurntStats {
   uniqueBurners: number;
   /** Wallets ranked by how many tokens they've sent to a sink. */
   topBurners: { address: string; count: number }[];
+  /** The most recently burned tokens (newest first), enriched with art. */
+  recentBurns: {
+    tokenId: string;
+    from: string;
+    timestamp: string | null;
+    name: string | null;
+    image: string | null;
+  }[];
   updatedAt: number;
   /**
    * Non-sensitive health info: whether a key is configured, the resolved
@@ -172,6 +230,13 @@ async function getDeadHeldTokenIds(): Promise<{
   return { deadHeldIds, existingCount: existing };
 }
 
+interface BurnEvent {
+  tokenId: string;
+  from: string;
+  blockNum: number;
+  timestamp: string | null;
+}
+
 interface BurnScan {
   /** Wallets ranked by how many tokens they sent to a sink. */
   topBurners: { address: string; count: number }[];
@@ -179,6 +244,8 @@ interface BurnScan {
   uniqueBurners: number;
   /** Every token id ever sent to a sink (authoritative burnt set). */
   burntTokenIds: string[];
+  /** The most recent burns first (id, burner, when). */
+  recentBurns: BurnEvent[];
 }
 
 /**
@@ -187,9 +254,13 @@ interface BurnScan {
  * set (which includes real `_burn`s to the zero address, not just dead-held
  * tokens) — so traits of burnt tokens can be resolved from these ids.
  */
+const RECENT_BURNS = 5;
+
 async function scanBurns(): Promise<BurnScan> {
   const counts = new Map<string, number>();
   const burntIds = new Set<string>();
+  // Keep only the most recent events by block, so "latest burns" is cheap.
+  const events: BurnEvent[] = [];
 
   for (const sink of BURN_ADDRESSES) {
     let pageKey: string | undefined;
@@ -202,6 +273,7 @@ async function scanBurns(): Promise<BurnScan> {
           toAddress: sink,
           category: ["erc721"],
           excludeZeroValue: false,
+          withMetadata: true,
           maxCount: "0x3e8",
           order: "asc",
           ...(pageKey ? { pageKey } : {}),
@@ -210,7 +282,16 @@ async function scanBurns(): Promise<BurnScan> {
 
       for (const t of result?.transfers ?? []) {
         const id = tokenIdToDecimal(t?.erc721TokenId ?? t?.tokenId);
-        if (id !== null) burntIds.add(id);
+        if (id !== null) {
+          burntIds.add(id);
+          const blockNum = Number(t?.blockNum ?? 0) || parseInt(t?.blockNum ?? "0", 16) || 0;
+          events.push({
+            tokenId: id,
+            from: (t?.from ?? "").toLowerCase(),
+            blockNum,
+            timestamp: t?.metadata?.blockTimestamp ?? null,
+          });
+        }
         const from = (t?.from ?? "").toLowerCase();
         // A mint is a transfer FROM zero; that isn't someone burning.
         if (!from || isBurnAddress(from)) continue;
@@ -228,7 +309,11 @@ async function scanBurns(): Promise<BurnScan> {
     .slice(0, 25);
 
   const burntTokenIds = Array.from(burntIds).sort((a, b) => Number(a) - Number(b));
-  return { topBurners, uniqueBurners: counts.size, burntTokenIds };
+  // Most recent first, across both sinks; keep a handful.
+  const recentBurns = events
+    .sort((a, b) => b.blockNum - a.blockNum)
+    .slice(0, RECENT_BURNS);
+  return { topBurners, uniqueBurners: counts.size, burntTokenIds, recentBurns };
 }
 
 function tokenIdToDecimal(tokenId: unknown): string | null {
@@ -272,8 +357,20 @@ export async function getBurntStats(): Promise<BurntStats> {
     scanR.status === "fulfilled"
       ? scanR.value
       : (errors.push(errMsg(scanR.reason)),
-        { topBurners: [], uniqueBurners: 0, burntTokenIds: [] });
+        { topBurners: [], uniqueBurners: 0, burntTokenIds: [], recentBurns: [] });
   const { topBurners, uniqueBurners, burntTokenIds } = scan;
+
+  // Enrich the latest burns with art (one small batch). Non-fatal.
+  const recentBurns = await enrichRecent(scan.recentBurns).catch((e) => {
+    errors.push(errMsg(e));
+    return scan.recentBurns.map((b) => ({
+      tokenId: b.tokenId,
+      from: b.from,
+      timestamp: b.timestamp,
+      name: `#${b.tokenId}`,
+      image: null as string | null,
+    }));
+  });
 
   const initialSupply = BURNT_INITIAL_SUPPLY;
   // Live supply is "known" only if the contract reported totalSupply or we
@@ -304,6 +401,7 @@ export async function getBurntStats(): Promise<BurntStats> {
     burntTokenIds,
     uniqueBurners,
     topBurners,
+    recentBurns,
     updatedAt: Date.now(),
     diagnostics: {
       hasKey: !!process.env.ALCHEMY_API_KEY,

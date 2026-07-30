@@ -23,6 +23,13 @@ export interface BurntStats {
   burntTokenIds: string[];
   uniqueBurners: number;
   topBurners: { address: string; count: number }[];
+  recentBurns: {
+    tokenId: string;
+    from: string;
+    timestamp: string | null;
+    name: string | null;
+    image: string | null;
+  }[];
   updatedAt: number;
   diagnostics?: {
     hasKey: boolean;
