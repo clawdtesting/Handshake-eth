@@ -3,17 +3,11 @@ import { z } from "zod";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { BURNT_COLLECTION_ADDRESS } from "@/lib/burnt/config";
 import { getBurntStats } from "@/lib/burnt/stats";
+import { nftBase } from "@/lib/burnt/alchemy";
 
 export const dynamic = "force-dynamic";
 
-const ALCHEMY_NETWORK = process.env.ALCHEMY_NETWORK ?? "ethereum-mainnet";
 const PAGE_SIZE = 48;
-
-function nftBase(): string {
-  const key = process.env.ALCHEMY_API_KEY;
-  if (!key) throw new Error("ALCHEMY_API_KEY is not set");
-  return `https://${ALCHEMY_NETWORK}.g.alchemy.com/nft/v3/${key}`;
-}
 
 interface BurntToken {
   tokenId: string;

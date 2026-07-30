@@ -4,6 +4,7 @@ import {
   BURNT_INITIAL_SUPPLY,
   isBurnAddress,
 } from "@/lib/burnt/config";
+import { ALCHEMY_NETWORK, nftBase, rpcUrl } from "@/lib/burnt/alchemy";
 
 /**
  * Server-side burn accounting for the Burnt page. All chain reads go through
@@ -22,23 +23,6 @@ import {
  *                   (0x…dEaD or a configured burn contract). Enumerable by id.
  */
 
-const ALCHEMY_NETWORK = process.env.ALCHEMY_NETWORK ?? "ethereum-mainnet";
-
-// NFT API and the JSON-RPC core API use different host slugs for the same
-// chain (ethereum-mainnet vs eth-mainnet). Normalise for the RPC host.
-const RPC_NETWORK = ALCHEMY_NETWORK.replace(/^ethereum-/, "eth-");
-
-function nftBase(): string {
-  const key = process.env.ALCHEMY_API_KEY;
-  if (!key) throw new Error("ALCHEMY_API_KEY is not set");
-  return `https://${ALCHEMY_NETWORK}.g.alchemy.com/nft/v3/${key}`;
-}
-
-function rpcUrl(): string {
-  const key = process.env.ALCHEMY_API_KEY;
-  if (!key) throw new Error("ALCHEMY_API_KEY is not set");
-  return `https://${RPC_NETWORK}.g.alchemy.com/v2/${key}`;
-}
 
 // Which Alchemy REST endpoint a URL is hitting, for readable diagnostics that
 // never include the API key.
@@ -296,7 +280,7 @@ export async function getBurntStats(): Promise<BurntStats> {
     diagnostics: {
       hasKey: !!process.env.ALCHEMY_API_KEY,
       nftNetwork: ALCHEMY_NETWORK,
-      rpcNetwork: RPC_NETWORK,
+      rpcNetwork: ALCHEMY_NETWORK,
       supplyKnown,
       errors,
     },
