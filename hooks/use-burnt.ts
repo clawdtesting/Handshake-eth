@@ -120,3 +120,23 @@ export function useBurntTraits() {
     queryFn: () => fetchJson<BurntTraits>("/api/burnt/traits"),
   });
 }
+
+export interface BurntTokenLookup {
+  tokenId: string;
+  exists: boolean;
+  status?: "alive" | "burnt";
+  name?: string | null;
+  image?: string | null;
+  owner?: string | null;
+  traits?: { traitType: string; value: string }[];
+}
+
+export function useBurntTokenLookup(id: string | null) {
+  return useQuery({
+    queryKey: ["burnt-token", id],
+    enabled: !!id,
+    staleTime: 60_000,
+    queryFn: () =>
+      fetchJson<BurntTokenLookup>(`/api/burnt/token?id=${encodeURIComponent(id!)}`),
+  });
+}
