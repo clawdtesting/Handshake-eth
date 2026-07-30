@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Swords, Play, Pause, RotateCcw, Trophy } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -229,70 +229,65 @@ function Arena({
         <HpBar name={nameOf(b.tokenId)} hp={hpB} max={b.maxHp} align="right" />
       </div>
 
-      {/* Arena */}
-      <Card className="overflow-hidden">
-        <CardContent className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[220px_1fr_220px]">
-          <StatPanel fighter={a} image={imageA} name={nameOf(a.tokenId)} fainted={hpA <= 0} />
+      {/* Animated battle stage */}
+      <BattleStage
+        result={result}
+        idx={idx}
+        lastEvent={lastEvent}
+        done={done}
+        winnerName={winnerName}
+        imageA={imageA}
+        imageB={imageB}
+        nameA={nameOf(a.tokenId)}
+        nameB={nameOf(b.tokenId)}
+        hpA={hpA}
+        hpB={hpB}
+      />
 
-          <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-xl border border-border/40 bg-gradient-to-b from-ethereum-purple/5 to-transparent p-4 text-center">
-            {done ? (
-              <div className="flex flex-col items-center gap-2">
-                <Trophy className="h-8 w-8 text-amber-400" />
-                <p className="text-lg font-semibold">
-                  {winnerName ? `${winnerName} wins!` : "Draw!"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {result.rounds} rounds · {result.events.length} moves
-                </p>
-              </div>
-            ) : lastEvent ? (
-              <EventLine event={lastEvent} nameOf={nameOf} />
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-2">
+        {done ? (
+          <button
+            onClick={onReplay}
+            className="flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-1.5 text-sm hover:border-ethereum-purple/40"
+          >
+            <RotateCcw className="h-4 w-4" /> Replay
+          </button>
+        ) : (
+          <button
+            onClick={onTogglePlay}
+            className="flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-1.5 text-sm hover:border-ethereum-purple/40"
+          >
+            {playing ? (
+              <>
+                <Pause className="h-4 w-4" /> Pause
+              </>
             ) : (
-              <p className="text-sm text-muted-foreground">Fight!</p>
+              <>
+                <Play className="h-4 w-4" /> Play
+              </>
             )}
+          </button>
+        )}
+        <button
+          onClick={onRematch}
+          className="flex items-center gap-1.5 rounded-md bg-ethereum-purple/15 px-3 py-1.5 text-sm text-ethereum-purple hover:bg-ethereum-purple/25"
+        >
+          <Swords className="h-4 w-4" /> Rematch
+        </button>
+      </div>
 
-            <div className="mt-2 flex items-center gap-2">
-              {done ? (
-                <button
-                  onClick={onReplay}
-                  className="flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-1.5 text-sm hover:border-ethereum-purple/40"
-                >
-                  <RotateCcw className="h-4 w-4" /> Replay
-                </button>
-              ) : (
-                <button
-                  onClick={onTogglePlay}
-                  className="flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-1.5 text-sm hover:border-ethereum-purple/40"
-                >
-                  {playing ? (
-                    <>
-                      <Pause className="h-4 w-4" /> Pause
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4" /> Play
-                    </>
-                  )}
-                </button>
-              )}
-              <button
-                onClick={onRematch}
-                className="flex items-center gap-1.5 rounded-md bg-ethereum-purple/15 px-3 py-1.5 text-sm text-ethereum-purple hover:bg-ethereum-purple/25"
-              >
-                <Swords className="h-4 w-4" /> Rematch
-              </button>
-            </div>
-          </div>
-
-          <StatPanel
-            fighter={b}
-            image={imageB}
-            name={nameOf(b.tokenId)}
-            fainted={hpB <= 0}
-            mirror
-          />
-        </CardContent>
-      </Card>
+      {/* Stat panels */}
+      <div className="grid grid-cols-2 gap-4">
+        <StatPanel fighter={a} image={imageA} name={nameOf(a.tokenId)} fainted={hpA <= 0} />
+        <StatPanel
+          fighter={b}
+          image={imageB}
+          name={nameOf(b.tokenId)}
+          fainted={hpB <= 0}
+          mirror
+        />
+      </div>
 
       {/* Combat log */}
       <Card>
@@ -315,6 +310,203 @@ function Arena({
     </div>
   );
 }
+
+interface Pop {
+  key: number;
+  side: "a" | "b";
+  text: string;
+  crit: boolean;
+  dodge: boolean;
+}
+
+function BattleStage({
+  result,
+  idx,
+  lastEvent,
+  done,
+  winnerName,
+  imageA,
+  imageB,
+  nameA,
+  nameB,
+  hpA,
+  hpB,
+}: {
+  result: CombatResult;
+  idx: number;
+  lastEvent: CombatEvent | null;
+  done: boolean;
+  winnerName: string | null;
+  imageA: string | null;
+  imageB: string | null;
+  nameA: string;
+  nameB: string;
+  hpA: number;
+  hpB: number;
+}) {
+  const aRef = useRef<HTMLDivElement>(null);
+  const bRef = useRef<HTMLDivElement>(null);
+  const [pop, setPop] = useState<Pop | null>(null);
+
+  // Drive sprite motion from each combat event.
+  useEffect(() => {
+    if (!lastEvent) return;
+    const attackerIsA = lastEvent.attacker === result.a.tokenId;
+    const atkEl = (attackerIsA ? aRef : bRef).current;
+    const defEl = (attackerIsA ? bRef : aRef).current;
+    const dir = attackerIsA ? 1 : -1; // A lunges right, B lunges left
+    const defenderSide: "a" | "b" = attackerIsA ? "b" : "a";
+
+    atkEl?.animate(
+      [
+        { transform: "translateX(0)" },
+        { transform: `translateX(${dir * 46}px) scale(1.06)`, offset: 0.45 },
+        { transform: "translateX(0)" },
+      ],
+      { duration: 430, easing: "ease-out" },
+    );
+
+    if (lastEvent.type === "dodge") {
+      defEl?.animate(
+        [
+          { transform: "translateY(0)" },
+          { transform: `translateY(-26px) translateX(${dir * 12}px)`, offset: 0.5 },
+          { transform: "translateY(0)" },
+        ],
+        { duration: 430, easing: "ease-out" },
+      );
+      setPop({ key: idx, side: defenderSide, text: "DODGE", crit: false, dodge: true });
+    } else {
+      defEl?.animate(
+        [
+          { transform: "translateX(0)" },
+          { transform: "translateX(-7px)" },
+          { transform: "translateX(7px)" },
+          { transform: "translateX(-4px)" },
+          { transform: "translateX(0)" },
+        ],
+        { duration: 300, easing: "ease-in-out", delay: 110 },
+      );
+      setPop({
+        key: idx,
+        side: defenderSide,
+        text: `-${lastEvent.damage}`,
+        crit: lastEvent.type === "crit",
+        dodge: false,
+      });
+    }
+  }, [idx, lastEvent, result]);
+
+  return (
+    <div className="relative h-64 overflow-hidden rounded-xl border border-border/40 bg-gradient-to-b from-ethereum-purple/10 via-background to-fuchsia-500/5">
+      {/* ground line */}
+      <div className="absolute inset-x-0 bottom-14 h-px bg-white/10" />
+
+      {/* current action text */}
+      <div className="absolute inset-x-0 top-3 flex justify-center px-4">
+        {!done && lastEvent && (
+          <span className="rounded-full bg-background/70 px-3 py-1 text-xs backdrop-blur">
+            <EventLine event={lastEvent} nameOf={(id) => (id === result.a.tokenId ? nameA : nameB)} compact />
+          </span>
+        )}
+      </div>
+
+      <Sprite
+        ref={aRef}
+        image={imageA}
+        name={nameA}
+        side="a"
+        fainted={hpA <= 0}
+        pop={pop?.side === "a" ? pop : null}
+      />
+      <Sprite
+        ref={bRef}
+        image={imageB}
+        name={nameB}
+        side="b"
+        fainted={hpB <= 0}
+        pop={pop?.side === "b" ? pop : null}
+      />
+
+      {/* Winner overlay */}
+      {done && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/60 backdrop-blur-sm">
+          <Trophy className="h-9 w-9 text-amber-400" />
+          <p className="text-xl font-semibold">
+            {winnerName ? `${winnerName} wins!` : "Draw!"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {result.rounds} rounds · {result.events.length} moves
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const Sprite = ({
+  ref,
+  image,
+  name,
+  side,
+  fainted,
+  pop,
+}: {
+  ref: RefObject<HTMLDivElement | null>;
+  image: string | null;
+  name: string;
+  side: "a" | "b";
+  fainted: boolean;
+  pop: Pop | null;
+}) => {
+  return (
+    <div
+      className={cn(
+        "absolute bottom-8",
+        side === "a" ? "left-6 sm:left-16" : "right-6 sm:right-16",
+      )}
+    >
+      <div
+        className={cn(!fainted && "combat-idle")}
+        style={fainted ? { transform: "rotate(10deg) translateY(8px)" } : undefined}
+      >
+        <div ref={ref} className="relative">
+          {pop && (
+            <span
+              key={pop.key}
+              className={cn(
+                "combat-float pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 text-lg font-bold",
+                pop.dodge
+                  ? "text-muted-foreground"
+                  : pop.crit
+                    ? "text-amber-400"
+                    : "text-red-400",
+              )}
+            >
+              {pop.text}
+              {pop.crit && "!"}
+            </span>
+          )}
+          <span
+            className={cn(
+              "block h-28 w-28 overflow-hidden rounded-xl bg-white/[0.03] ring-1 ring-border sm:h-32 sm:w-32",
+              fainted && "grayscale",
+            )}
+          >
+            <NFTMedia
+              imageUrl={image}
+              alt={name}
+              className={cn(
+                "h-full w-full object-cover",
+                side === "b" && "-scale-x-100",
+              )}
+            />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function EventLine({
   event,
