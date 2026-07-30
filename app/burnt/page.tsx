@@ -447,9 +447,13 @@ function BurntTraitsBoard({
                       {r.traitType}
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs">
-                    <span className="font-medium text-amber-400">{r.burnt}</span>
-                    <span className="text-muted-foreground">/{r.total}</span>
+                  <span className="flex shrink-0 items-baseline gap-1.5 text-xs">
+                    <span className="font-semibold text-amber-400">
+                      {r.burntPct}%
+                    </span>
+                    <span className="text-muted-foreground">
+                      {r.burnt}/{r.total}
+                    </span>
                   </span>
                 </button>
               </li>

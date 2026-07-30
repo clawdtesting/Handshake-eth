@@ -180,7 +180,9 @@ export async function getBurntTraits(): Promise<BurntTraits> {
       })),
     )
     .filter((r) => r.burnt > 0)
-    .sort((a, b) => b.burnt - a.burnt || b.burntPct - a.burntPct)
+    // Rank by share of the trait that's been burned; break ties by raw burnt
+    // count so a 1-of-1 100% doesn't outrank a broadly-burned trait at 100%.
+    .sort((a, b) => b.burntPct - a.burntPct || b.burnt - a.burnt)
     .slice(0, LEADERBOARD_SIZE);
 
   const value: BurntTraits = {
