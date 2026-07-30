@@ -935,7 +935,15 @@ function TraitsDrawer({
                                 {v.value}
                               </span>
                               {v.burnt > 0 && (
-                                <span className="shrink-0 text-xs text-amber-400">
+                                <span className="shrink-0 text-xs font-medium text-amber-400">
+                                  {v.count > 0
+                                    ? Math.round((v.burnt / v.count) * 1000) / 10
+                                    : 0}
+                                  %
+                                </span>
+                              )}
+                              {v.burnt > 0 && (
+                                <span className="shrink-0 text-xs text-amber-400/70">
                                   {v.burnt}🔥
                                 </span>
                               )}
