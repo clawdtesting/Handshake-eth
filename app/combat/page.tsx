@@ -14,7 +14,7 @@ import {
   type CombatResult,
   type Fighter,
 } from "@/lib/combat/engine";
-import { pickDraw, pickTaunt } from "@/lib/combat/taunts";
+import { pickDraw, pickLoserLine } from "@/lib/combat/taunts";
 import { cn } from "@/lib/utils";
 
 function currentHp(result: CombatResult, idx: number, tokenId: string): number {
@@ -445,7 +445,7 @@ function BattleStage({
                     just t00ns #{winnerId} wins!
                   </p>
                   <p className="text-sm text-amber-300/90">
-                    just t00ns #{loserId} {pickTaunt(seed)}
+                    {pickLoserLine(seed, loserId)}
                   </p>
                 </>
               ) : (
