@@ -5,6 +5,7 @@ import { Swords, Play, Pause, RotateCcw, Trophy } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NFTMedia } from "@/components/ui/nft-media";
+import { CutoutImage } from "@/components/ui/cutout-image";
 import { useBurntTokenLookup } from "@/hooks/use-burnt";
 import {
   deriveFighter,
@@ -475,7 +476,7 @@ const Sprite = ({
             <span
               key={pop.key}
               className={cn(
-                "combat-float pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 text-lg font-bold",
+                "combat-float pointer-events-none absolute -top-2 left-1/2 z-10 -translate-x-1/2 text-lg font-bold",
                 pop.dodge
                   ? "text-muted-foreground"
                   : pop.crit
@@ -487,17 +488,19 @@ const Sprite = ({
               {pop.crit && "!"}
             </span>
           )}
+          {/* ground shadow */}
+          <span className="absolute -bottom-1 left-1/2 h-2 w-16 -translate-x-1/2 rounded-[50%] bg-black/40 blur-sm sm:w-20" />
           <span
             className={cn(
-              "block h-28 w-28 overflow-hidden rounded-xl bg-white/[0.03] ring-1 ring-border sm:h-32 sm:w-32",
+              "block h-28 w-28 sm:h-32 sm:w-32",
               fainted && "grayscale",
             )}
           >
-            <NFTMedia
+            <CutoutImage
               imageUrl={image}
               alt={name}
               className={cn(
-                "h-full w-full object-cover",
+                "h-full w-full object-contain [filter:drop-shadow(0_4px_5px_rgba(0,0,0,0.5))]",
                 side === "b" && "-scale-x-100",
               )}
             />
