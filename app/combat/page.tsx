@@ -14,6 +14,7 @@ import {
   type CombatResult,
   type Fighter,
 } from "@/lib/combat/engine";
+import { pickDraw, pickTaunt } from "@/lib/combat/taunts";
 import { cn } from "@/lib/utils";
 
 function currentHp(result: CombatResult, idx: number, tokenId: string): number {
@@ -217,7 +218,6 @@ function Arena({
   const { a, b } = result;
   const hpA = currentHp(result, idx, a.tokenId);
   const hpB = currentHp(result, idx, b.tokenId);
-  const winnerName = result.winner ? nameOf(result.winner) : null;
 
   return (
     <div className="space-y-4">
@@ -236,7 +236,6 @@ function Arena({
         idx={idx}
         lastEvent={lastEvent}
         done={done}
-        winnerName={winnerName}
         imageA={imageA}
         imageB={imageB}
         nameA={nameOf(a.tokenId)}
@@ -325,7 +324,6 @@ function BattleStage({
   idx,
   lastEvent,
   done,
-  winnerName,
   imageA,
   imageB,
   nameA,
@@ -337,7 +335,6 @@ function BattleStage({
   idx: number;
   lastEvent: CombatEvent | null;
   done: boolean;
-  winnerName: string | null;
   imageA: string | null;
   imageB: string | null;
   nameA: string;
@@ -430,17 +427,36 @@ function BattleStage({
       />
 
       {/* Winner overlay */}
-      {done && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/60 backdrop-blur-sm">
-          <Trophy className="h-9 w-9 text-amber-400" />
-          <p className="text-xl font-semibold">
-            {winnerName ? `${winnerName} wins!` : "Draw!"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {result.rounds} rounds · {result.events.length} moves
-          </p>
-        </div>
-      )}
+      {done &&
+        (() => {
+          const winnerId = result.winner;
+          const loserId = winnerId
+            ? winnerId === result.a.tokenId
+              ? result.b.tokenId
+              : result.a.tokenId
+            : null;
+          const seed = `${winnerId ?? "draw"}:${loserId ?? ""}:${result.rounds}:${result.events.length}`;
+          return (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/70 px-4 text-center backdrop-blur-sm">
+              <Trophy className="h-9 w-9 text-amber-400" />
+              {winnerId && loserId ? (
+                <>
+                  <p className="text-xl font-semibold">
+                    just t00ns #{winnerId} wins!
+                  </p>
+                  <p className="text-sm text-amber-300/90">
+                    just t00ns #{loserId} {pickTaunt(seed)}
+                  </p>
+                </>
+              ) : (
+                <p className="text-lg font-semibold">{pickDraw(seed)}</p>
+              )}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {result.rounds} rounds · {result.events.length} moves
+              </p>
+            </div>
+          );
+        })()}
     </div>
   );
 }
