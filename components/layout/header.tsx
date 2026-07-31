@@ -13,6 +13,7 @@ const links = [
   { href: "/wanted", label: "Wanted" },
   { href: "/burnt", label: "Burnt" },
   { href: "/combat", label: "Combat" },
+  { href: "/combat-live", label: "Combat Live" },
   { href: "/account", label: "Dashboard" },
   { href: "/about", label: "About" },
 ];
