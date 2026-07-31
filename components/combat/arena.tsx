@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Pause, Play, RotateCcw, Swords, Trophy } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { NFTMedia } from "@/components/ui/nft-media";
@@ -37,6 +37,7 @@ export function Arena({
   imageA,
   imageB,
   hideControls,
+  overlayAction,
 }: {
   result: CombatResult;
   idx: number;
@@ -50,6 +51,8 @@ export function Arena({
   imageA: string | null;
   imageB: string | null;
   hideControls?: boolean;
+  /** Rendered inside the winner overlay, under the result text. */
+  overlayAction?: ReactNode;
 }) {
   const { a, b } = result;
   const hpA = currentHp(result, idx, a.tokenId);
@@ -78,6 +81,7 @@ export function Arena({
         nameB={nameOf(b.tokenId)}
         hpA={hpA}
         hpB={hpB}
+        overlayAction={overlayAction}
       />
 
       {/* Controls */}
@@ -168,6 +172,7 @@ function BattleStage({
   nameB,
   hpA,
   hpB,
+  overlayAction,
 }: {
   result: CombatResult;
   idx: number;
@@ -179,6 +184,7 @@ function BattleStage({
   nameB: string;
   hpA: number;
   hpB: number;
+  overlayAction?: ReactNode;
 }) {
   const aRef = useRef<HTMLDivElement>(null);
   const bRef = useRef<HTMLDivElement>(null);
@@ -296,6 +302,7 @@ function BattleStage({
               <p className="mt-1 text-xs text-muted-foreground">
                 {result.rounds} rounds · {result.events.length} moves
               </p>
+              {overlayAction && <div className="mt-3">{overlayAction}</div>}
             </div>
           );
         })()}

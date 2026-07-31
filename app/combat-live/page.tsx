@@ -459,36 +459,30 @@ export default function CombatLivePage() {
                 imageA={imageA}
                 imageB={imageB}
                 hideControls
+                overlayAction={
+                  isHost ? (
+                    <button
+                      onClick={matchOver ? newMatch : nextRound}
+                      className="flex items-center gap-1.5 rounded-md bg-ethereum-purple px-4 py-2 text-sm font-semibold text-ethereum-black hover:bg-ethereum-purple/90"
+                    >
+                      <Swords className="h-4 w-4" />
+                      {matchOver ? "New match" : "Next round"}
+                    </button>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      Waiting for host…
+                    </span>
+                  )
+                }
               />
-              <div className="mt-4 flex items-center justify-center gap-3">
-                {!done && !running && (
+              {!done && !running && (
+                <div className="mt-4 flex items-center justify-center">
                   <span className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" /> Round {activeRound}{" "}
                     starting…
                   </span>
-                )}
-                {done && !matchOver && isHost && (
-                  <button
-                    onClick={nextRound}
-                    className="flex items-center gap-1.5 rounded-md bg-ethereum-purple/15 px-4 py-2 text-sm text-ethereum-purple hover:bg-ethereum-purple/25"
-                  >
-                    <Swords className="h-4 w-4" /> Next round
-                  </button>
-                )}
-                {done && matchOver && isHost && (
-                  <button
-                    onClick={newMatch}
-                    className="flex items-center gap-1.5 rounded-md bg-ethereum-purple/15 px-4 py-2 text-sm text-ethereum-purple hover:bg-ethereum-purple/25"
-                  >
-                    <Swords className="h-4 w-4" /> New match
-                  </button>
-                )}
-                {done && !isHost && (
-                  <span className="text-sm text-muted-foreground">
-                    Waiting for host…
-                  </span>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="mt-6">
