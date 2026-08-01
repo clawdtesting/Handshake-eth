@@ -6,11 +6,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { useBurntTraits, type TraitType } from "@/hooks/use-burnt";
 import {
+  MAX_TRAIT_BONUS,
   STAT_META,
   STAT_ORDER,
   effectForTrait,
   isIgnoredTrait,
-  rarityBonus,
+  traitBonus,
   type TraitEffect,
 } from "@/lib/combat/trait-stats";
 import { cn } from "@/lib/utils";
@@ -81,9 +82,10 @@ export default function BattleSheetPage() {
 function TraitCard({ type }: { type: TraitType }) {
   const effect = effectForTrait(type.traitType);
   const total = type.values.reduce((sum, v) => sum + v.count, 0);
+  const typeMax = type.values.reduce((m, v) => Math.max(m, v.count), 0);
   // Rarest first — those grant the biggest bonuses.
   const rows = [...type.values].sort((a, b) => a.count - b.count);
-  const isSpecials = type.traitType.trim().toLowerCase() === "specials";
+  const isSpecials = effect === "all";
 
   return (
     <Card>
@@ -123,7 +125,10 @@ function TraitCard({ type }: { type: TraitType }) {
             <tbody>
               {rows.map((v) => {
                 const pct = total > 0 ? (v.count / total) * 100 : 0;
-                const bonus = rarityBonus(v.count, total);
+                // Specials are 1/1s → max stats regardless of within-type spread.
+                const bonus = isSpecials
+                  ? MAX_TRAIT_BONUS
+                  : traitBonus(v.count, typeMax);
                 return (
                   <tr key={v.value} className="border-t border-border/40">
                     <td className="py-1.5 pr-2">
