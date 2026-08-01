@@ -702,9 +702,7 @@ function TokenLookupResult({
             <span className="truncate font-semibold">
               {data.name ?? `#${id}`}
             </span>
-            <Badge variant={burned ? "destructive" : "success"}>
-              {burned ? "Burnt" : "Alive"}
-            </Badge>
+            {!burned && <Badge variant="success">Alive</Badge>}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Token #{id}
@@ -851,11 +849,11 @@ function TokenCard({
             burned && "grayscale",
           )}
         />
-        <div className="absolute left-2 top-2">
-          <Badge variant={burned ? "destructive" : "success"}>
-            {burned ? "Burnt" : "Alive"}
-          </Badge>
-        </div>
+        {!burned && (
+          <div className="absolute left-2 top-2">
+            <Badge variant="success">Alive</Badge>
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-between gap-1 p-2">
         <span className="truncate text-sm font-medium">
