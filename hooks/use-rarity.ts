@@ -18,6 +18,9 @@ export interface CollectionRarity {
   image: string | null;
   totalSupply: number | null;
   types: RarityTrait[];
+  source: "summary" | "tokens" | "none";
+  sampled: number;
+  truncated: boolean;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
