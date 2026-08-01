@@ -1,23 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi";
-import { Check, Copy, Loader2, ShieldCheck, ShieldAlert, Swords, Trophy, Users } from "lucide-react";
+import { Check, Copy, Loader2, Search, Swords, Trophy, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { NFTMedia } from "@/components/ui/nft-media";
 import { Arena } from "@/components/combat/arena";
 import { getBrowserClient } from "@/lib/supabase/browser";
-import { useWalletNFTs } from "@/hooks/use-market";
-import { BURNT_COLLECTION_ADDRESS } from "@/lib/burnt/config";
+import {
+  useBurntTokens,
+  useBurntTokenLookup,
+} from "@/hooks/use-burnt";
 import { deriveFighter, simulate, type CombatResult } from "@/lib/combat/engine";
-import { cn, shortAddress } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const BEST_OF = 3;
 const WINS_NEEDED = Math.ceil(BEST_OF / 2); // 2
 
 interface SeatState {
-  address: string;
+  id: string; // per-session client id (presence key)
   name: string;
   isHost: boolean;
   tokenId: string | null;
@@ -31,8 +31,6 @@ interface SeatState {
   winsB: number;
 }
 
-type Verdict = "checking" | "ok" | "bad";
-
 function randomCode(): string {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   let out = "";
@@ -40,20 +38,19 @@ function randomCode(): string {
   return out;
 }
 
-async function verifyOwner(token: string, owner: string): Promise<boolean> {
-  try {
-    const r = await fetch(`/api/combat/owner?token=${token}&owner=${owner}`);
-    if (!r.ok) return false;
-    const j = await r.json();
-    return !!j.owned;
-  } catch {
-    return false;
-  }
-}
-
 export default function CombatLivePage() {
   const supa = getBrowserClient();
-  const { address } = useAccount();
+
+  // Per-session identity — no wallet needed.
+  const [clientId, setClientId] = useState<string | null>(null);
+  useEffect(() => {
+    setClientId(
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
+    );
+  }, []);
+  const name = clientId ? `Player ${clientId.slice(0, 4)}` : "";
 
   const [code, setCode] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
@@ -76,7 +73,13 @@ export default function CombatLivePage() {
   const [idx, setIdx] = useState(0);
   const [running, setRunning] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [verify, setVerify] = useState<Record<string, Verdict>>({});
+
+  // Picker.
+  const [idInput, setIdInput] = useState("");
+  const [lookupId, setLookupId] = useState<string | null>(null);
+  const lookup = useBurntTokenLookup(lookupId);
+  const collection = useBurntTokens("all");
+  const collectionTokens = collection.data?.pages.flatMap((p) => p.tokens) ?? [];
 
   const channelRef = useRef<ReturnType<
     NonNullable<ReturnType<typeof getBrowserClient>>["channel"]
@@ -91,23 +94,21 @@ export default function CombatLivePage() {
     }
   }, []);
 
-  const { data: walletNfts, isLoading: loadingNfts } = useWalletNFTs(address);
-  const owned = useMemo(
-    () =>
-      (walletNfts?.nfts ?? []).filter(
-        (n) => n.contractAddress.toLowerCase() === BURNT_COLLECTION_ADDRESS,
-      ),
-    [walletNfts],
-  );
-
-  const name = address ? shortAddress(address) : "";
+  // Resolve a typed token id → set it as my fighter.
+  useEffect(() => {
+    if (!lookupId || !lookup.data) return;
+    if (lookup.data.exists && String(lookup.data.tokenId) === lookupId) {
+      setMyTokenId(lookupId);
+      setMyImage(lookup.data.image ?? null);
+    }
+  }, [lookupId, lookup.data]);
 
   // Join/leave the realtime channel.
   useEffect(() => {
-    if (!supa || !code || !address) return;
+    if (!supa || !code || !clientId) return;
     setSubscribed(false);
     const channel = supa.channel(`combat-live:${code}`, {
-      config: { presence: { key: address } },
+      config: { presence: { key: clientId } },
     });
     channelRef.current = channel;
 
@@ -124,12 +125,12 @@ export default function CombatLivePage() {
       channelRef.current = null;
       setSubscribed(false);
     };
-  }, [supa, code, address]);
+  }, [supa, code, clientId]);
 
   // Broadcast my seat.
   const myState: SeatState = useMemo(
     () => ({
-      address: address ?? "",
+      id: clientId ?? "",
       name,
       isHost,
       tokenId: myTokenId,
@@ -141,7 +142,7 @@ export default function CombatLivePage() {
       winsA: isHost ? winsA : 0,
       winsB: isHost ? winsB : 0,
     }),
-    [address, name, isHost, myTokenId, myImage, myReady, hostSeed, hostStartAt, round, winsA, winsB],
+    [clientId, name, isHost, myTokenId, myImage, myReady, hostSeed, hostStartAt, round, winsA, winsB],
   );
   useEffect(() => {
     if (subscribed && channelRef.current) channelRef.current.track(myState);
@@ -149,14 +150,14 @@ export default function CombatLivePage() {
 
   // Deduped seats → host/guest.
   const seatList = useMemo(() => {
-    const byAddr = new Map<string, SeatState>();
-    for (const s of seats) if (s?.address) byAddr.set(s.address, s);
-    return [...byAddr.values()];
+    const byId = new Map<string, SeatState>();
+    for (const s of seats) if (s?.id) byId.set(s.id, s);
+    return [...byId.values()];
   }, [seats]);
   const host = seatList.find((s) => s.isHost) ?? null;
   const guest = seatList.find((s) => !s.isHost) ?? null;
   const roomFull =
-    !isHost && !!guest && guest.address !== address && !!host && host.address !== address;
+    !isHost && !!guest && guest.id !== clientId && !!host && host.id !== clientId;
 
   const activeSeed = host?.seed ?? null;
   const activeStart = host?.startAt ?? null;
@@ -169,50 +170,15 @@ export default function CombatLivePage() {
   const imageA = host?.image ?? null;
   const imageB = guest?.image ?? null;
 
-  // --- ownership verification ---
-  const keyFor = (s: SeatState | null) =>
-    s && s.tokenId ? `${s.address}:${s.tokenId}` : null;
-  const myKey = address && myTokenId ? `${address}:${myTokenId}` : null;
-  const hostKey = keyFor(host);
-  const guestKey = keyFor(guest);
-  const mineOk = myKey ? verify[myKey] === "ok" : false;
-  const bothVerified =
-    !!hostKey && !!guestKey && verify[hostKey] === "ok" && verify[guestKey] === "ok";
-  const someBad =
-    (hostKey && verify[hostKey] === "bad") || (guestKey && verify[guestKey] === "bad");
-
-  // Verify my own pick (gates ready-up).
-  useEffect(() => {
-    if (!myKey || !address || !myTokenId) return;
-    if (verify[myKey]) return;
-    setVerify((v) => ({ ...v, [myKey]: "checking" }));
-    verifyOwner(myTokenId, address).then((ok) =>
-      setVerify((v) => ({ ...v, [myKey]: ok ? "ok" : "bad" })),
-    );
-  }, [myKey, address, myTokenId, verify]);
-
-  // Verify each seat that has locked in a token (defends against a tampered
-  // client claiming a token it doesn't own).
-  useEffect(() => {
-    for (const s of [host, guest]) {
-      const k = keyFor(s);
-      if (!s || !k || verify[k]) continue;
-      setVerify((v) => ({ ...v, [k]: "checking" }));
-      verifyOwner(s.tokenId!, s.address).then((ok) =>
-        setVerify((v) => ({ ...v, [k]: ok ? "ok" : "bad" })),
-      );
-    }
-  }, [hostKey, guestKey, host, guest, verify]);
-
-  // Host starts round 1 once both are ready AND provably own their T00n.
+  // Host starts round 1 once both are ready with a T00n.
   useEffect(() => {
     if (!isHost || round !== 0 || matchOver) return;
-    if (host?.ready && guest?.ready && host?.tokenId && guest?.tokenId && bothVerified) {
+    if (host?.ready && guest?.ready && host?.tokenId && guest?.tokenId) {
       setHostSeed(Math.floor(Math.random() * 1_000_000_000));
       setHostStartAt(Date.now() + 1500);
       setRound(1);
     }
-  }, [isHost, round, matchOver, host?.ready, guest?.ready, host?.tokenId, guest?.tokenId, bothVerified]);
+  }, [isHost, round, matchOver, host?.ready, guest?.ready, host?.tokenId, guest?.tokenId]);
 
   const result = useMemo<CombatResult | null>(() => {
     if (activeSeed == null || !idA || !idB) return null;
@@ -220,15 +186,14 @@ export default function CombatLivePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSeed, idA, idB, activeRound]);
 
-  // Begin the round (both clients), gated on verification.
   useEffect(() => {
-    if (activeSeed == null || activeStart == null || !result || !bothVerified) return;
+    if (activeSeed == null || activeStart == null || !result) return;
     setIdx(0);
     setRunning(false);
     const t = setTimeout(() => setRunning(true), Math.max(0, activeStart - Date.now()));
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSeed, activeStart, activeRound, result, bothVerified]);
+  }, [activeSeed, activeStart, activeRound, result]);
 
   useEffect(() => {
     if (!result || !running || idx >= result.events.length) return;
@@ -238,7 +203,6 @@ export default function CombatLivePage() {
 
   const done = !!result && idx >= result.events.length;
 
-  // Host tallies the round winner exactly once.
   useEffect(() => {
     if (!isHost || !done || !result) return;
     if (countedRound.current === activeRound) return;
@@ -283,6 +247,10 @@ export default function CombatLivePage() {
     setMyTokenId(tokenId);
     setMyImage(image);
   }
+  function submitId() {
+    const id = idInput.trim().replace(/^#/, "");
+    if (/^\d{1,10}$/.test(id)) setLookupId(id);
+  }
   function nextRound() {
     if (!isHost || matchOver) return;
     setHostSeed(Math.floor(Math.random() * 1_000_000_000));
@@ -313,20 +281,6 @@ export default function CombatLivePage() {
             Live combat needs Supabase Realtime configured — set{" "}
             <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
             <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, then reload.
-          </CardContent>
-        </Card>
-      </Shell>
-    );
-  }
-  if (!address) {
-    return (
-      <Shell>
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Connect your wallet to battle with a T00n you own.
-            </p>
-            <ConnectButton />
           </CardContent>
         </Card>
       </Shell>
@@ -378,6 +332,7 @@ export default function CombatLivePage() {
   const inSeries = activeRound >= 1;
   const matchWinnerId =
     sWinsA >= WINS_NEEDED ? idA : sWinsB >= WINS_NEEDED ? idB : null;
+  const idNotFound = !!lookupId && lookup.data?.exists === false;
 
   return (
     <Shell>
@@ -411,12 +366,7 @@ export default function CombatLivePage() {
         <>
           {/* Seats + score */}
           <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-3">
-            <SeatCard
-              seat={host}
-              label="Host"
-              you={host?.address === address}
-              verdict={hostKey ? verify[hostKey] : undefined}
-            />
+            <SeatCard seat={host} label="Host" you={host?.id === clientId} />
             <div className="flex flex-col items-center justify-center px-1">
               <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 Best of {BEST_OF}
@@ -427,20 +377,8 @@ export default function CombatLivePage() {
                 <span className={cn(sWinsB > sWinsA && "text-amber-400")}>{sWinsB}</span>
               </span>
             </div>
-            <SeatCard
-              seat={guest}
-              label="Challenger"
-              you={guest?.address === address}
-              verdict={guestKey ? verify[guestKey] : undefined}
-            />
+            <SeatCard seat={guest} label="Challenger" you={guest?.id === clientId} />
           </div>
-
-          {someBad && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-              <ShieldAlert className="h-4 w-4" /> A fighter doesn&apos;t own the
-              T00n they picked — the match can&apos;t start.
-            </div>
-          )}
 
           {inSeries && result ? (
             <div className="mt-6">
@@ -487,45 +425,95 @@ export default function CombatLivePage() {
           ) : (
             <div className="mt-6">
               <h2 className="mb-3 text-sm font-semibold text-muted-foreground">
-                Pick your T00n
+                Pick your fighter
               </h2>
-              {loadingNfts ? (
-                <p className="text-sm text-muted-foreground">Loading your T00ns…</p>
-              ) : owned.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No T00ns found in this wallet — you need to own one to battle.
+
+              {/* Quick pick by id */}
+              <div className="mb-4 flex max-w-sm items-center gap-2 rounded-xl border border-border/60 bg-card/60 px-3 py-2">
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <input
+                  value={idInput}
+                  onChange={(e) => setIdInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submitId()}
+                  inputMode="numeric"
+                  placeholder="Enter a token id — e.g. 3145"
+                  className="w-full bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
+                />
+                <button
+                  onClick={submitId}
+                  className="shrink-0 rounded-md bg-ethereum-purple/15 px-3 py-1.5 text-sm text-ethereum-purple hover:bg-ethereum-purple/25"
+                >
+                  Pick
+                </button>
+              </div>
+              {idNotFound && (
+                <p className="-mt-2 mb-3 text-xs text-red-400">
+                  No token #{lookupId} in this collection.
                 </p>
-              ) : (
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-6">
-                  {owned.map((n) => (
-                    <button
-                      key={n.tokenId}
-                      onClick={() => pick(n.tokenId, n.imageUrl ?? null)}
-                      disabled={myReady}
-                      className={cn(
-                        "overflow-hidden rounded-lg border text-left transition-all disabled:opacity-60",
-                        myTokenId === n.tokenId
-                          ? "border-ethereum-purple ring-2 ring-ethereum-purple/50"
-                          : "border-border/60 hover:border-ethereum-purple/40",
-                      )}
-                    >
-                      <span className="block aspect-square w-full bg-white/[0.03]">
-                        <NFTMedia
-                          imageUrl={n.imageUrl}
-                          alt={`#${n.tokenId}`}
-                          className="h-full w-full object-cover"
-                        />
-                      </span>
-                      <span className="block truncate p-1.5 text-xs">#{n.tokenId}</span>
-                    </button>
-                  ))}
-                </div>
               )}
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+              {/* Browse the full collection (burned ones show grey). */}
+              <p className="mb-2 text-xs text-muted-foreground">
+                …or browse the collection — burned T00ns can fight too.
+              </p>
+              {collection.isLoading ? (
+                <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
+                  {Array.from({ length: 16 }).map((_, i) => (
+                    <div key={i} className="aspect-square animate-pulse rounded-lg bg-white/[0.04]" />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
+                    {collectionTokens.map((t) => {
+                      const burned = t.status === "burned";
+                      return (
+                        <button
+                          key={t.tokenId}
+                          onClick={() => pick(t.tokenId, t.image)}
+                          disabled={myReady}
+                          className={cn(
+                            "relative overflow-hidden rounded-lg border text-left transition-all disabled:opacity-60",
+                            myTokenId === t.tokenId
+                              ? "border-ethereum-purple ring-2 ring-ethereum-purple/50"
+                              : "border-border/60 hover:border-ethereum-purple/40",
+                          )}
+                        >
+                          <span className="block aspect-square w-full bg-white/[0.03]">
+                            <NFTMedia
+                              imageUrl={t.image}
+                              alt={`#${t.tokenId}`}
+                              className={cn("h-full w-full object-cover", burned && "grayscale")}
+                            />
+                          </span>
+                          {burned && (
+                            <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[10px] text-red-300">
+                              burnt
+                            </span>
+                          )}
+                          <span className="block truncate p-1 text-[11px]">#{t.tokenId}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {collection.hasNextPage && (
+                    <div className="mt-4 flex justify-center">
+                      <button
+                        onClick={() => collection.fetchNextPage()}
+                        disabled={collection.isFetchingNextPage}
+                        className="rounded-md border border-ethereum-purple/30 px-4 py-2 text-sm text-ethereum-purple hover:bg-ethereum-purple/10 disabled:opacity-50"
+                      >
+                        {collection.isFetchingNextPage ? "Loading…" : "Load more"}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => setMyReady((r) => !r)}
-                  disabled={!myTokenId || (!myReady && !mineOk)}
+                  disabled={!myTokenId}
                   className={cn(
                     "rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50",
                     myReady
@@ -533,41 +521,23 @@ export default function CombatLivePage() {
                       : "bg-ethereum-purple text-ethereum-black hover:bg-ethereum-purple/90",
                   )}
                 >
-                  {myReady ? "Ready ✓ (tap to unready)" : "Ready up"}
+                  {myReady
+                    ? "Ready ✓ (tap to unready)"
+                    : myTokenId
+                      ? `Ready up with #${myTokenId}`
+                      : "Pick a fighter first"}
                 </button>
-                {myTokenId && !mineOk && (
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    {myKey && verify[myKey] === "bad" ? (
-                      <>
-                        <ShieldAlert className="h-3.5 w-3.5 text-red-400" /> You
-                        don&apos;t own #{myTokenId}
-                      </>
-                    ) : (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying
-                        ownership…
-                      </>
-                    )}
-                  </span>
-                )}
-                {mineOk && !myReady && (
-                  <span className="flex items-center gap-1.5 text-xs text-emerald-400">
-                    <ShieldCheck className="h-3.5 w-3.5" /> Ownership verified
-                  </span>
-                )}
                 <span className="text-xs text-muted-foreground">
                   {host?.ready && guest?.ready
-                    ? bothVerified
-                      ? "Both ready — starting…"
-                      : "Verifying ownership…"
+                    ? "Both ready — starting…"
                     : guest
                       ? "Waiting for both fighters to ready up."
                       : "Waiting for a challenger to join…"}
                 </span>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Ownership is checked on-chain, and the host sets the match seed —
-                no grinding a favourable roll.
+                The host sets the match seed, so neither side can grind a
+                favourable roll.
               </p>
             </div>
           )}
@@ -586,9 +556,9 @@ function Shell({ children }: { children: React.ReactNode }) {
         </p>
         <h1 className="text-3xl font-semibold">Live Arena</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Two wallets, two T00ns, one best-of-{BEST_OF} — in real time. Create a
-          room, share the link, each side brings a T00n they own, ready up, and
-          battle.
+          Two players, two T00ns, one best-of-{BEST_OF} — in real time. Create a
+          room, share the link, each side picks any T00n from the collection,
+          ready up, and battle.
         </p>
       </section>
       {children}
@@ -600,12 +570,10 @@ function SeatCard({
   seat,
   label,
   you,
-  verdict,
 }: {
   seat: SeatState | null;
   label: string;
   you: boolean;
-  verdict?: Verdict;
 }) {
   return (
     <div
@@ -619,15 +587,11 @@ function SeatCard({
           {label}
           {you && " · you"}
         </span>
-        <span className="flex items-center gap-1.5">
-          {verdict === "ok" && <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />}
-          {verdict === "bad" && <ShieldAlert className="h-3.5 w-3.5 text-red-400" />}
-          {seat?.ready && (
-            <span className="flex items-center gap-1 text-xs text-emerald-400">
-              <Check className="h-3.5 w-3.5" /> ready
-            </span>
-          )}
-        </span>
+        {seat?.ready && (
+          <span className="flex items-center gap-1 text-xs text-emerald-400">
+            <Check className="h-3.5 w-3.5" /> ready
+          </span>
+        )}
       </div>
       {seat ? (
         <div className="flex items-center gap-2">
