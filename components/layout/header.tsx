@@ -12,6 +12,7 @@ const links = [
   { href: "/burnt", label: "Burnt" },
   { href: "/combat", label: "Combat" },
   { href: "/combat-live", label: "Combat Live" },
+  { href: "/battle-sheet", label: "Battle Sheet" },
 ];
 
 export function Header() {
