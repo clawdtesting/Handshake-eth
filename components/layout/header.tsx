@@ -2,20 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Handshake } from "lucide-react";
-import { OfferAlerts } from "@/components/layout/offer-alerts";
 import { cn } from "@/lib/utils";
 
+// Only the T00ns-facing tabs are surfaced for now. The trading routes
+// (/market, /create, /wanted, /account, /about) still exist and work — they're
+// just hidden from the nav until the settlement contract is live.
 const links = [
-  { href: "/market", label: "Market" },
-  { href: "/create", label: "Deal" },
-  { href: "/wanted", label: "Wanted" },
   { href: "/burnt", label: "Burnt" },
   { href: "/combat", label: "Combat" },
   { href: "/combat-live", label: "Combat Live" },
-  { href: "/account", label: "Dashboard" },
-  { href: "/about", label: "About" },
 ];
 
 export function Header() {
@@ -50,14 +46,6 @@ export function Header() {
               </Link>
             ))}
           </nav>
-        </div>
-        <div className="flex items-center gap-2">
-          <OfferAlerts />
-          <ConnectButton
-            showBalance={{ smallScreen: false, largeScreen: true }}
-            chainStatus="icon"
-            accountStatus={{ smallScreen: "avatar", largeScreen: "full" }}
-          />
         </div>
       </div>
       <nav className="flex items-center gap-1 overflow-x-auto border-t border-ethereum-purple/20 px-4 py-2 md:hidden">
