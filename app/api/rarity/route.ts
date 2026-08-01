@@ -5,6 +5,8 @@ import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { getCollectionRarity } from "@/lib/rarity/summary";
 
 export const dynamic = "force-dynamic";
+// The metadata-tally fallback can page several thousand tokens.
+export const maxDuration = 60;
 
 const querySchema = z.object({ contract: addressSchema });
 

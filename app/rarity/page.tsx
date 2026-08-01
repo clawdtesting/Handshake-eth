@@ -93,7 +93,7 @@ function RarityResult({
     return (
       <EmptyState
         title="No trait data"
-        body="The indexer has no attribute summary for this collection (it may not be indexed, or the tokens have no traits)."
+        body="Alchemy has no traits for this contract on Ethereum mainnet — the collection may be on another chain (Base, Polygon…), not indexed, or its tokens have no on-chain attributes."
       />
     );
   }
@@ -127,6 +127,15 @@ function RarityResult({
           )}
         </div>
       </div>
+
+      {data.source === "tokens" && (
+        <p className="mb-4 text-xs text-muted-foreground">
+          Tallied from {data.sampled.toLocaleString()} tokens&apos; metadata
+          {data.truncated
+            ? " (large collection — rarities are approximate from a sample)."
+            : "."}
+        </p>
+      )}
 
       <div className="grid gap-5 md:grid-cols-2">
         {data.types.map((t) => (
