@@ -13,6 +13,7 @@ const links = [
   { href: "/combat", label: "Combat" },
   { href: "/combat-live", label: "Combat Live" },
   { href: "/battle-sheet", label: "Battle Sheet" },
+  { href: "/rarity", label: "Rarity" },
 ];
 
 export function Header() {
