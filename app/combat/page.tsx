@@ -5,13 +5,14 @@ import { Swords } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Arena } from "@/components/combat/arena";
-import { useBurntTokenLookup } from "@/hooks/use-burnt";
+import { useBurntTokenLookup, useBurntTraits } from "@/hooks/use-burnt";
 import {
   deriveFighter,
   simulate,
   type CombatResult,
   type Fighter,
 } from "@/lib/combat/engine";
+import { buildRarityIndex, deriveFighterFromTraits } from "@/lib/combat/trait-stats";
 
 export default function CombatPage() {
   const [inputA, setInputA] = useState("");
@@ -24,22 +25,37 @@ export default function CombatPage() {
 
   const lookupA = useBurntTokenLookup(idA);
   const lookupB = useBurntTokenLookup(idB);
+  const { data: traitsData } = useBurntTraits();
+  const rarityIndex = useMemo(
+    () => (traitsData ? buildRarityIndex(traitsData.types) : null),
+    [traitsData],
+  );
 
+  // Stats come from each token's real traits (rarity-weighted); id-hash is the
+  // fallback when metadata/traits aren't available.
   const fighters = useMemo<{ a: Fighter; b: Fighter } | null>(() => {
     if (!idA || !idB) return null;
-    return { a: deriveFighter(idA), b: deriveFighter(idB) };
-  }, [idA, idB]);
+    const fa =
+      (rarityIndex && lookupA.data?.traits
+        ? deriveFighterFromTraits(idA, lookupA.data.traits, rarityIndex)
+        : null) ?? deriveFighter(idA);
+    const fb =
+      (rarityIndex && lookupB.data?.traits
+        ? deriveFighterFromTraits(idB, lookupB.data.traits, rarityIndex)
+        : null) ?? deriveFighter(idB);
+    return { a: fa, b: fb };
+  }, [idA, idB, rarityIndex, lookupA.data, lookupB.data]);
 
   const result = useMemo<CombatResult | null>(() => {
     if (!fighters) return null;
     return simulate(fighters.a, fighters.b, seed);
   }, [fighters, seed]);
 
-  // Reset playback whenever the matchup or seed changes.
+  // Reset playback whenever the fight (stats or seed) changes.
   useEffect(() => {
     setIdx(0);
     setPlaying(true);
-  }, [idA, idB, seed]);
+  }, [result]);
 
   // Step through the battle.
   useEffect(() => {

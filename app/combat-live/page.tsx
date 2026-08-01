@@ -9,8 +9,10 @@ import { getBrowserClient } from "@/lib/supabase/browser";
 import {
   useBurntTokens,
   useBurntTokenLookup,
+  useBurntTraits,
 } from "@/hooks/use-burnt";
 import { deriveFighter, simulate, type CombatResult } from "@/lib/combat/engine";
+import { buildRarityIndex, deriveFighterFromTraits } from "@/lib/combat/trait-stats";
 import { cn } from "@/lib/utils";
 
 const BEST_OF = 3;
@@ -180,11 +182,30 @@ export default function CombatLivePage() {
     }
   }, [isHost, round, matchOver, host?.ready, guest?.ready, host?.tokenId, guest?.tokenId]);
 
+  // Trait-driven stats. Both clients derive from the same token traits +
+  // collection rarity, so the fight stays identical on both screens.
+  const { data: traitsData } = useBurntTraits();
+  const rarityIndex = useMemo(
+    () => (traitsData ? buildRarityIndex(traitsData.types) : null),
+    [traitsData],
+  );
+  const lookupA = useBurntTokenLookup(idA);
+  const lookupB = useBurntTokenLookup(idB);
+  const statsReady = !!rarityIndex && !!lookupA.data && !!lookupB.data;
+
   const result = useMemo<CombatResult | null>(() => {
-    if (activeSeed == null || !idA || !idB) return null;
-    return simulate(deriveFighter(idA), deriveFighter(idB), activeSeed);
+    if (activeSeed == null || !idA || !idB || !statsReady) return null;
+    const fa =
+      (rarityIndex && lookupA.data?.traits
+        ? deriveFighterFromTraits(idA, lookupA.data.traits, rarityIndex)
+        : null) ?? deriveFighter(idA);
+    const fb =
+      (rarityIndex && lookupB.data?.traits
+        ? deriveFighterFromTraits(idB, lookupB.data.traits, rarityIndex)
+        : null) ?? deriveFighter(idB);
+    return simulate(fa, fb, activeSeed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSeed, idA, idB, activeRound]);
+  }, [activeSeed, idA, idB, activeRound, statsReady, rarityIndex, lookupA.data, lookupB.data]);
 
   useEffect(() => {
     if (activeSeed == null || activeStart == null || !result) return;
@@ -380,7 +401,11 @@ export default function CombatLivePage() {
             <SeatCard seat={guest} label="Challenger" you={guest?.id === clientId} />
           </div>
 
-          {inSeries && result ? (
+          {inSeries && !result ? (
+            <div className="mt-6 flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading fighters…
+            </div>
+          ) : inSeries && result ? (
             <div className="mt-6">
               {matchWinnerId && (
                 <div className="mb-3 flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-300">

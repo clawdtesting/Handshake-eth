@@ -60,31 +60,7 @@ export function Arena({
 
   return (
     <div className="space-y-4">
-      {/* HP header */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <HpBar name={nameOf(a.tokenId)} hp={hpA} max={a.maxHp} align="left" />
-        <span className="rounded-full border border-border/60 bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
-          VS
-        </span>
-        <HpBar name={nameOf(b.tokenId)} hp={hpB} max={b.maxHp} align="right" />
-      </div>
-
-      {/* Animated battle stage */}
-      <BattleStage
-        result={result}
-        idx={idx}
-        lastEvent={lastEvent}
-        done={done}
-        imageA={imageA}
-        imageB={imageB}
-        nameA={nameOf(a.tokenId)}
-        nameB={nameOf(b.tokenId)}
-        hpA={hpA}
-        hpB={hpB}
-        overlayAction={overlayAction}
-      />
-
-      {/* Controls */}
+      {/* Controls — on top of the battle */}
       {!hideControls && (
         <div className="flex items-center justify-center gap-2">
           {done ? (
@@ -112,12 +88,36 @@ export function Arena({
           )}
           <button
             onClick={onRematch}
-            className="flex items-center gap-1.5 rounded-md bg-ethereum-purple/15 px-3 py-1.5 text-sm text-ethereum-purple hover:bg-ethereum-purple/25"
+            className="flex items-center gap-1.5 rounded-md bg-ethereum-purple px-4 py-1.5 text-sm font-semibold text-ethereum-black hover:bg-ethereum-purple/90"
           >
             <Swords className="h-4 w-4" /> Rematch
           </button>
         </div>
       )}
+
+      {/* HP header */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <HpBar name={nameOf(a.tokenId)} hp={hpA} max={a.maxHp} align="left" />
+        <span className="rounded-full border border-border/60 bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
+          VS
+        </span>
+        <HpBar name={nameOf(b.tokenId)} hp={hpB} max={b.maxHp} align="right" />
+      </div>
+
+      {/* Animated battle stage */}
+      <BattleStage
+        result={result}
+        idx={idx}
+        lastEvent={lastEvent}
+        done={done}
+        imageA={imageA}
+        imageB={imageB}
+        nameA={nameOf(a.tokenId)}
+        nameB={nameOf(b.tokenId)}
+        hpA={hpA}
+        hpB={hpB}
+        overlayAction={overlayAction}
+      />
 
       {/* Stat panels */}
       <div className="grid grid-cols-2 gap-4">
