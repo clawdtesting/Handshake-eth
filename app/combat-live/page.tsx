@@ -511,11 +511,6 @@ export default function CombatLivePage() {
                               className={cn("h-full w-full object-cover", burned && "grayscale")}
                             />
                           </span>
-                          {burned && (
-                            <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[10px] text-red-300">
-                              burnt
-                            </span>
-                          )}
                           <span className="block truncate p-1 text-[11px]">#{t.tokenId}</span>
                         </button>
                       );
